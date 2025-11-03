@@ -19,6 +19,7 @@
         "livewire/livewire": "^4.0@beta",
         "owenvoke/blade-fontawesome": "^2.9",
         "robsontenorio/mary": "^2.4",
+        "spatie/laravel-backup": "^9.3",
         "spatie/laravel-medialibrary": "^11.17",
         "spatie/laravel-permission": "^6.22"
     },

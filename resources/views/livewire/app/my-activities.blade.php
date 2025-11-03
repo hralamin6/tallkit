@@ -87,9 +87,13 @@
                                                         @if(isset($activity->properties['old'][$key]) && $activity->properties['old'][$key] != $value)
                                                             <div>
                                                                 <span class="font-medium">{{ ucfirst(str_replace('_', ' ', $key)) }}:</span>
-                                                                <span class="line-through text-error">{{ $activity->properties['old'][$key] }}</span>
+                                                                <span class="line-through text-error">
+                                                                    {{ is_array($activity->properties['old'][$key]) ? json_encode($activity->properties['old'][$key]) : $activity->properties['old'][$key] }}
+                                                                </span>
                                                                 <x-icon name="o-arrow-right" class="w-3 h-3 inline" />
-                                                                <span class="text-success">{{ $value }}</span>
+                                                                <span class="text-success">
+                                                                    {{ is_array($value) ? json_encode($value) : $value }}
+                                                                </span>
                                                             </div>
                                                         @endif
                                                     @endforeach

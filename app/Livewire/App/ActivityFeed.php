@@ -7,12 +7,14 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Mary\Traits\Toast;
+use Illuminate\Support\Facades\DB;
 
 #[Title('Activity Feed')]
 #[Layout('layouts.app')]
 class ActivityFeed extends Component
 {
-    use WithPagination;
+    use WithPagination, Toast;
 
     public $filters = [
         'log_name' => '',
@@ -22,6 +24,19 @@ class ActivityFeed extends Component
         'date_to' => '',
         'causer_id' => '',
     ];
+
+    // Dashboard stats
+    public $timeRange = '7'; // days for stats
+    public $showStats = true; // toggle stats visibility
+
+    // Clear functionality properties
+    public $clearFilters = [
+        'days' => 90,
+        'log_name' => '',
+        'event' => '',
+    ];
+    public $confirmDelete = false;
+    public $showClearModal = false;
 
     public function mount()
     {
@@ -47,6 +62,158 @@ class ActivityFeed extends Component
             'causer_id' => '',
         ];
         $this->resetPage();
+    }
+
+    public function openClearModal()
+    {
+        // Check permission
+        if (!auth()->user()->can('activity.delete')) {
+            $this->error('Unauthorized access to clear activities.');
+            return;
+        }
+
+        $this->showClearModal = true;
+        $this->confirmDelete = false;
+    }
+
+    public function closeClearModal()
+    {
+        $this->showClearModal = false;
+        $this->confirmDelete = false;
+    }
+
+    public function getPreviewCount()
+    {
+        $query = Activity::query();
+
+        if ($this->clearFilters['days']) {
+            $date = now()->subDays($this->clearFilters['days']);
+            $query->where('created_at', '<', $date);
+        }
+
+        if ($this->clearFilters['log_name']) {
+            $query->where('log_name', $this->clearFilters['log_name']);
+        }
+
+        if ($this->clearFilters['event']) {
+            $query->where('event', $this->clearFilters['event']);
+        }
+
+        return $query->count();
+    }
+
+    public function clearActivities()
+    {
+        // Check permission
+        if (!auth()->user()->can('activity.delete')) {
+            $this->error('Unauthorized access to clear activities.');
+            return;
+        }
+
+        if (!$this->confirmDelete) {
+            $this->error('Please confirm deletion by checking the box.');
+            return;
+        }
+
+        $query = Activity::query();
+
+        if ($this->clearFilters['days']) {
+            $date = now()->subDays($this->clearFilters['days']);
+            $query->where('created_at', '<', $date);
+        }
+
+        if ($this->clearFilters['log_name']) {
+            $query->where('log_name', $this->clearFilters['log_name']);
+        }
+
+        if ($this->clearFilters['event']) {
+            $query->where('event', $this->clearFilters['event']);
+        }
+
+        $count = $query->count();
+        $query->delete();
+
+        // Log the cleanup action
+        \App\Services\ActivityLogger::logSystem('Activities cleared from UI', [
+            'count' => $count,
+            'days' => $this->clearFilters['days'],
+            'log_name' => $this->clearFilters['log_name'],
+            'event' => $this->clearFilters['event'],
+        ]);
+
+        $this->confirmDelete = false;
+        $this->showClearModal = false;
+        $this->success("Successfully deleted {$count} activities!");
+        $this->resetPage();
+    }
+
+    public function clearAllActivities()
+    {
+        // Check permission
+        if (!auth()->user()->can('activity.delete')) {
+            $this->error('Unauthorized access to clear activities.');
+            return;
+        }
+
+        if (!$this->confirmDelete) {
+            $this->error('Please confirm deletion by checking the box.');
+            return;
+        }
+
+        $count = Activity::count();
+        Activity::truncate();
+
+        // Log the cleanup action
+        \App\Services\ActivityLogger::logSystem('All activities cleared from UI', [
+            'count' => $count,
+        ]);
+
+        $this->confirmDelete = false;
+        $this->showClearModal = false;
+        $this->success("Successfully deleted all {$count} activities!");
+        $this->resetPage();
+    }
+
+    public function getClearStats()
+    {
+        return [
+            'total' => Activity::count(),
+            'oldest' => Activity::orderBy('created_at', 'asc')->first()?->created_at,
+            'newest' => Activity::orderBy('created_at', 'desc')->first()?->created_at,
+            'by_log' => Activity::select('log_name', DB::raw('count(*) as count'))
+                ->groupBy('log_name')
+                ->orderBy('count', 'desc')
+                ->limit(5)
+                ->get(),
+        ];
+    }
+
+    public function toggleStats()
+    {
+        $this->showStats = !$this->showStats;
+    }
+
+    public function getActivityStats()
+    {
+        $startDate = now()->subDays($this->timeRange);
+
+        return [
+            'total' => Activity::where('created_at', '>=', $startDate)->count(),
+            'unique_users' => Activity::where('created_at', '>=', $startDate)
+                ->whereNotNull('causer_id')
+                ->distinct('causer_id')
+                ->count('causer_id'),
+            'by_log' => Activity::where('created_at', '>=', $startDate)
+                ->select('log_name', DB::raw('count(*) as count'))
+                ->groupBy('log_name')
+                ->orderBy('count', 'desc')
+                ->get(),
+            'by_event' => Activity::where('created_at', '>=', $startDate)
+                ->select('event', DB::raw('count(*) as count'))
+                ->groupBy('event')
+                ->orderBy('count', 'desc')
+                ->get(),
+        ];
     }
 
     public function getEventColor($event)
@@ -95,6 +262,9 @@ class ActivityFeed extends Component
             'activities' => $activities,
             'logNames' => $logNames,
             'events' => $events,
+            'stats' => $this->showStats ? $this->getActivityStats() : null,
+            'previewCount' => $this->showClearModal ? $this->getPreviewCount() : 0,
+            'clearStats' => $this->showClearModal ? $this->getClearStats() : null,
         ]);
     }
 }

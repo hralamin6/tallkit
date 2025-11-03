@@ -1,5 +1,85 @@
 <div>
-    <x-header title="Activity Feed" subtitle="All system activities" separator />
+    <x-header title="Activity Feed" subtitle="All system activities" separator>
+        <x-slot:actions>
+            <x-button
+                wire:click="toggleStats"
+                :label="$showStats ? 'Hide Stats' : 'Show Stats'"
+                icon="o-chart-bar"
+                class="btn-ghost btn-sm"
+            />
+            @can('activity.delete')
+                <x-button
+                    wire:click="openClearModal"
+                    label="Clear Activities"
+                    icon="o-trash"
+                    class="btn-error btn-sm"
+                />
+            @endcan
+        </x-slot:actions>
+    </x-header>
+
+    {{-- Dashboard Statistics --}}
+    @if($showStats && $stats)
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            {{-- Total Activities --}}
+            <x-stat
+                title="Total Activities"
+                :value="number_format($stats['total'])"
+                icon="o-document-text"
+                color="text-primary"
+            />
+
+            {{-- Unique Users --}}
+            <x-stat
+                title="Active Users"
+                :value="number_format($stats['unique_users'])"
+                icon="o-user-group"
+                color="text-success"
+            />
+
+            {{-- By Log Type --}}
+            <x-card class="col-span-1">
+                <div class="text-sm font-semibold mb-2">By Log Type</div>
+                <div class="space-y-1">
+                    @forelse($stats['by_log']->take(3) as $log)
+                        <div class="flex justify-between text-xs">
+                            <span class="badge badge-sm badge-ghost">{{ $log->log_name }}</span>
+                            <span class="font-medium">{{ number_format($log->count) }}</span>
+                        </div>
+                    @empty
+                        <span class="text-xs text-base-content/60">No data</span>
+                    @endforelse
+                </div>
+            </x-card>
+
+            {{-- By Event --}}
+            <x-card class="col-span-1">
+                <div class="text-sm font-semibold mb-2">By Event</div>
+                <div class="space-y-1">
+                    @forelse($stats['by_event']->take(3) as $event)
+                        <div class="flex justify-between text-xs">
+                            <span class="badge badge-sm badge-{{ $this->getEventColor($event->event) }}">{{ $event->event }}</span>
+                            <span class="font-medium">{{ number_format($event->count) }}</span>
+                        </div>
+                    @empty
+                        <span class="text-xs text-base-content/60">No data</span>
+                    @endforelse
+                </div>
+            </x-card>
+        </div>
+
+        {{-- Time Range Selector --}}
+        <x-card class="mb-6">
+            <div class="flex items-center gap-4">
+                <span class="text-sm font-medium">Stats Time Range:</span>
+                <x-radio wire:model.live="timeRange" :options="[
+                    ['id' => '7', 'name' => '7 Days'],
+                    ['id' => '30', 'name' => '30 Days'],
+                    ['id' => '90', 'name' => '90 Days'],
+                ]" inline />
+            </div>
+        </x-card>
+    @endif
 
     {{-- Filters --}}
     <x-card title="Filters" class="mb-6">
@@ -101,9 +181,13 @@
                                                     @if(isset($activity->properties['old'][$key]) && $activity->properties['old'][$key] != $value)
                                                         <div class="mb-1">
                                                             <span class="text-base-content/60">{{ ucfirst(str_replace('_', ' ', $key)) }}:</span>
-                                                            <span class="line-through text-error">{{ $activity->properties['old'][$key] }}</span>
+                                                            <span class="line-through text-error">
+                                                                {{ is_array($activity->properties['old'][$key]) ? json_encode($activity->properties['old'][$key]) : $activity->properties['old'][$key] }}
+                                                            </span>
                                                             →
-                                                            <span class="text-success">{{ $value }}</span>
+                                                            <span class="text-success">
+                                                                {{ is_array($value) ? json_encode($value) : $value }}
+                                                            </span>
                                                         </div>
                                                     @endif
                                                 @endforeach
@@ -142,6 +226,91 @@
             {{ $activities->links() }}
         </div>
     </x-card>
+
+    {{-- Clear Activities Modal --}}
+    <x-modal wire:model="showClearModal" title="Clear Activities" subtitle="Permanently delete activities from the system">
+        @if($showClearModal)
+            <div class="space-y-4">
+                {{-- Stats --}}
+                @if($clearStats)
+                    <x-alert icon="o-information-circle" class="alert-info">
+                        <div class="text-sm">
+                            <div><strong>Total Activities:</strong> {{ number_format($clearStats['total']) }}</div>
+                            @if($clearStats['oldest'])
+                                <div><strong>Oldest:</strong> {{ $clearStats['oldest']->format('M d, Y H:i') }}</div>
+                            @endif
+                            @if($clearStats['newest'])
+                                <div><strong>Newest:</strong> {{ $clearStats['newest']->format('M d, Y H:i') }}</div>
+                            @endif
+                        </div>
+                    </x-alert>
+                @endif
+
+                {{-- Clear Filters --}}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <x-input
+                        wire:model.live="clearFilters.days"
+                        label="Delete activities older than (days)"
+                        type="number"
+                        min="1"
+                        placeholder="e.g., 90"
+                        hint="Leave empty to not filter by date"
+                    />
+
+                    <x-select
+                        wire:model.live="clearFilters.log_name"
+                        label="Log Type"
+                        :options="$logNames->map(fn($name) => ['id' => $name, 'name' => ucfirst($name)])"
+                        placeholder="All types"
+                    />
+
+                    <x-select
+                        wire:model.live="clearFilters.event"
+                        label="Event"
+                        :options="$events->map(fn($event) => ['id' => $event, 'name' => ucfirst(str_replace('_', ' ', $event))])"
+                        placeholder="All events"
+                    />
+                </div>
+
+                {{-- Preview Count --}}
+                <x-alert icon="o-exclamation-triangle" class="alert-warning">
+                    <strong>{{ number_format($previewCount) }}</strong> activities will be deleted based on current filters.
+                </x-alert>
+
+                {{-- Confirmation Checkbox --}}
+                <x-checkbox
+                    wire:model="confirmDelete"
+                    label="I understand this action cannot be undone"
+                    hint="Please confirm deletion"
+                />
+
+                {{-- Action Buttons --}}
+                <div class="flex justify-between gap-2 mt-6">
+                    <div class="flex gap-2">
+                        <x-button
+                            wire:click="clearActivities"
+                            label="Clear Filtered Activities"
+                            icon="o-trash"
+                            class="btn-error"
+                            :disabled="!$confirmDelete || $previewCount === 0"
+                        />
+                        <x-button
+                            wire:click="clearAllActivities"
+                            label="Clear All Activities"
+                            icon="o-trash"
+                            class="btn-error btn-outline"
+                            :disabled="!$confirmDelete"
+                        />
+                    </div>
+                    <x-button
+                        wire:click="closeClearModal"
+                        label="Cancel"
+                        class="btn-ghost"
+                    />
+                </div>
+            </div>
+        @endif
+    </x-modal>
 </div>
 
 @script
@@ -172,4 +341,3 @@
     };
 </script>
 @endscript
-

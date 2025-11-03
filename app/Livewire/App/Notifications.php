@@ -2,63 +2,201 @@
 
 namespace App\Livewire\App;
 
-use App\Notifications\SimplePushNotification;
-use App\Notifications\WebPushNotification;
+use App\Models\NotificationPreference;
 use App\Notifications\WelcomeNotification;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Livewire\WithPagination;
 use Mary\Traits\Toast;
 
-#[Title('Push Notifications')]
+#[Title('Notifications')]
 #[Layout('layouts.app')]
 class Notifications extends Component
 {
-    use Toast;
+    use Toast, WithPagination;
 
-    public string $testTitle = 'Test Notification';
-    public string $testBody = 'This is a test push notification!';
+    // Active tab/section
+    public $activeTab = 'center'; // center, preferences
 
-    public function sendTest()
+    // Notification Center
+    public $selectedFilter = 'all'; // all, unread, read
+    public $unreadCount = 0;
+
+    // Notification Preferences
+    public array $preferences = [];
+    public array $categories = [
+        'general' => [
+            'name' => 'General',
+            'description' => 'General notifications and updates',
+        ],
+        'welcome' => [
+            'name' => 'Welcome',
+            'description' => 'Welcome messages and onboarding',
+        ],
+        'mentions' => [
+            'name' => 'Mentions',
+            'description' => 'When someone mentions you',
+        ],
+        'system' => [
+            'name' => 'System Alerts',
+            'description' => 'System updates and important alerts',
+        ],
+        'messages' => [
+            'name' => 'Messages',
+            'description' => 'Direct messages and conversations',
+        ],
+        'updates' => [
+            'name' => 'Updates',
+            'description' => 'Product updates and announcements',
+        ],
+    ];
+
+    public function mount(): void
+    {
+        $this->updateUnreadCount();
+        $this->loadPreferences();
+    }
+
+    // ========== Notification Center Methods ==========
+
+    public function updateUnreadCount(): void
+    {
+        $this->unreadCount = Auth::user()->unreadNotifications()->count();
+    }
+
+    public function markAsRead($notificationId): void
+    {
+        $notification = Auth::user()
+            ->notifications()
+            ->where('id', $notificationId)
+            ->first();
+
+        if ($notification) {
+            $notification->markAsRead();
+            $this->updateUnreadCount();
+            $this->success('Notification marked as read');
+        }
+    }
+
+    public function markAllAsRead(): void
+    {
+        Auth::user()->unreadNotifications->markAsRead();
+        $this->updateUnreadCount();
+        $this->success('All notifications marked as read');
+    }
+
+    public function deleteNotification($notificationId): void
+    {
+        $notification = Auth::user()
+            ->notifications()
+            ->where('id', $notificationId)
+            ->first();
+
+        if ($notification) {
+            $notification->delete();
+            $this->updateUnreadCount();
+            $this->success('Notification deleted');
+        }
+    }
+
+    public function deleteAll(): void
+    {
+        Auth::user()->notifications()->delete();
+        $this->updateUnreadCount();
+        $this->success('All notifications deleted');
+    }
+
+    public function getNotifications()
+    {
+        $query = Auth::user()->notifications();
+
+        if ($this->selectedFilter === 'unread') {
+            $query->whereNull('read_at');
+        } elseif ($this->selectedFilter === 'read') {
+            $query->whereNotNull('read_at');
+        }
+
+        return $query->latest()->paginate(10);
+    }
+
+    // ========== Notification Preferences Methods ==========
+
+    public function loadPreferences(): void
     {
         $user = Auth::user();
 
-        if (!$user->pushSubscriptions()->exists()) {
-            $this->error('Please subscribe to push notifications first!');
-            return;
+        foreach ($this->categories as $category => $details) {
+            $preference = $user->notificationPreferences()
+                ->where('category', $category)
+                ->first();
+
+            if (!$preference) {
+                $preference = $user->notificationPreferences()->create([
+                    'category' => $category,
+                ]);
+            }
+
+            $this->preferences[$category] = [
+                'push_enabled' => $preference->push_enabled,
+                'email_enabled' => $preference->email_enabled,
+                'database_enabled' => $preference->database_enabled,
+            ];
+        }
+    }
+
+    public function savePreferences(): void
+    {
+        $user = Auth::user();
+
+        foreach ($this->preferences as $category => $settings) {
+            $user->notificationPreferences()->updateOrCreate(
+                ['category' => $category],
+                [
+                    'push_enabled' => $settings['push_enabled'] ?? true,
+                    'email_enabled' => $settings['email_enabled'] ?? true,
+                    'database_enabled' => $settings['database_enabled'] ?? true,
+                ]
+            );
         }
 
-        try {
-            $user->notify(new WebPushNotification(
-                $this->testTitle,
-                $this->testBody,
-                asset('logo.png'), // $icon
-                asset('logo.png'), // $badge
-                [ // $data
-                    'url' => route('app.dashboard'),
-                    'meta' => ['source' => 'test'],
-                ],
-                [ // $actions
-                    ['action' => 'open-dashboard', 'title' => 'Open Dashboard', 'icon' => asset('favicon.ico')],
-                    ['action' => 'dismiss', 'title' => 'Dismiss', 'icon' => asset('logo.png')],
-                ],
-                'test-notification', // $tag
-                true // $requireInteraction
-            ));
+        $this->success('Notification preferences saved successfully!');
+    }
 
-            $this->success('✅ Test notification sent! Check your browser.');
-            $this->dispatch('test-sent');
-        } catch (\Exception $e) {
-            $this->error('Failed to send: ' . $e->getMessage());
+    public function enableAll(): void
+    {
+        foreach ($this->preferences as $category => $settings) {
+            $this->preferences[$category] = [
+                'push_enabled' => true,
+                'email_enabled' => true,
+                'database_enabled' => true,
+            ];
         }
+
+        $this->savePreferences();
+    }
+
+    public function disableAll(): void
+    {
+        foreach ($this->preferences as $category => $settings) {
+            $this->preferences[$category] = [
+                'push_enabled' => false,
+                'email_enabled' => false,
+                'database_enabled' => false,
+            ];
+        }
+
+        $this->savePreferences();
     }
 
     public function render()
     {
-      \auth()->user()->notify(new WelcomeNotification(\auth()->user()->name));
+//      dd('asdf');
 
-      return view('livewire.app.notifications');
+      return view('livewire.app.notifications', [
+            'notifications' => $this->activeTab === 'center' ? $this->getNotifications() : collect(),
+        ]);
     }
 }
 

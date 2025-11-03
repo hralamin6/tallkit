@@ -36,7 +36,7 @@ class WelcomeNotification extends Notification implements ShouldQueue
         $preference = $notifiable->getNotificationPreference('welcome');
 
         if ($preference->database_enabled) {
-            $channels[] = 'database';
+//            $channels[] = 'database';
         }
 
         if ($preference->email_enabled) {
@@ -44,7 +44,7 @@ class WelcomeNotification extends Notification implements ShouldQueue
         }
 
         if ($preference->push_enabled && $notifiable->pushSubscriptions()->exists()) {
-            $channels[] = WebPushChannel::class;
+//            $channels[] = WebPushChannel::class;
         }
 
         return $channels;
@@ -102,4 +102,3 @@ class WelcomeNotification extends Notification implements ShouldQueue
             ->tag('welcome-notification');
     }
 }
-
