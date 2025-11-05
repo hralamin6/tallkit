@@ -1,4 +1,4 @@
-<x-nav sticky full-width class="bg-base-100" x-data="{ open: false }">
+<x-nav sticky full-width class="bg-base-100" x-data="{ open: false, messagesOpen: false }">
 
   <x-slot:brand>
     {{-- Drawer toggle for "main-drawer" --}}
@@ -58,19 +58,71 @@
       </ul>
     </div>
 
-    <x-button :label="__('Messages')" icon="o-envelope" link="###" class="btn-ghost btn-sm" responsive />
+    {{-- Messages Dropdown --}}
+    <div class="dropdown dropdown-end" @click="messagesOpen = !messagesOpen">
+      <label tabindex="0" @click="messagesOpen = !messagesOpen" class="btn btn-ghost btn-circle btn-sm">
+        <div class="indicator">
+          <x-icon name="o-chat-bubble-left-right" class="w-5 h-5" />
+          @if($this->totalUnreadCount > 0)
+            <span class="badge badge-sm badge-primary indicator-item">{{ $this->totalUnreadCount }}</span>
+          @endif
+        </div>
+      </label>
+      <div tabindex="0" x-show="messagesOpen" @click.away="messagesOpen = false" x-cloak
+           class="dropdown-content z-[1] menu p-0 shadow-lg bg-base-100 rounded-box w-80 mt-2 max-h-96 overflow-y-auto">
+        <div class="sticky top-0 bg-base-200 p-3 rounded-t-box border-b border-base-300">
+          <h3 class="font-semibold text-sm">{{ __('Unread Messages') }}</h3>
+        </div>
+
+        @if($this->unreadConversations->count() > 0)
+          <ul class="p-2">
+            @foreach($this->unreadConversations as $conversation)
+              @php
+                $otherUser = $conversation->getOtherUser(auth()->id());
+                $unreadCount = $conversation->getUnreadCount(auth()->id());
+              @endphp
+              <li>
+                <a wire:navigate href="{{ route('chat.index', ['conversation' => $conversation->id]) }}"
+                   @click="messagesOpen = false"
+                   class="flex items-start gap-3 p-3 hover:bg-base-200 rounded-lg">
+                  <div class="avatar">
+                    <div class="w-10 h-10 rounded-full">
+                      <img src="{{ $otherUser->avatar_url }}" alt="{{ $otherUser->name }}" />
+                    </div>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between">
+                      <p class="font-semibold text-sm truncate">{{ $otherUser->name }}</p>
+                      <span class="badge badge-primary badge-sm">{{ $unreadCount }}</span>
+                    </div>
+                    @if($conversation->latestMessage)
+                      <p class="text-xs text-base-content/70 truncate mt-1">
+                        {{ Str::limit($conversation->latestMessage->body ?? 'Attachment', 40) }}
+                      </p>
+                      <p class="text-xs text-base-content/50 mt-1">
+                        {{ $conversation->latestMessage->created_at->diffForHumans() }}
+                      </p>
+                    @endif
+                  </div>
+                </a>
+              </li>
+            @endforeach
+          </ul>
+          <div class="p-2 border-t border-base-300">
+            <a wire:navigate href="{{ route('chat.index') }}" @click="messagesOpen = false"
+               class="btn btn-sm btn-block btn-ghost">
+              {{ __('View All Messages') }}
+            </a>
+          </div>
+        @else
+          <div class="p-8 text-center text-base-content/50">
+            <x-icon name="o-chat-bubble-left-right" class="w-12 h-12 mx-auto mb-2 opacity-30" />
+            <p class="text-sm">{{ __('No unread messages') }}</p>
+          </div>
+        @endif
+      </div>
+    </div>
+
     <x-button :label="__('Notifications')" icon="o-bell" link="###" class="btn-ghost btn-sm" responsive />
   </x-slot:actions>
 </x-nav>
-
-<script>
-  document.addEventListener('livewire:initialized', () => {
-    Livewire.on('language-switched', () => {
-      window.location.reload();
-    });
-  });
-</script>
-
-<style>
-  [x-cloak] { display: none !important; }
-</style>

@@ -151,4 +151,47 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
     {
         return $this->hasOne(UserDetail::class);
     }
+
+    /**
+     * Get conversations where user is participant one.
+     */
+    public function conversationsAsUserOne()
+    {
+        return $this->hasMany(Conversation::class, 'user_one_id');
+    }
+
+    /**
+     * Get conversations where user is participant two.
+     */
+    public function conversationsAsUserTwo()
+    {
+        return $this->hasMany(Conversation::class, 'user_two_id');
+    }
+
+    /**
+     * Get all conversations for this user.
+     */
+    public function conversations()
+    {
+        return $this->belongsToMany(Conversation::class, 'conversation_user')
+            ->withPivot('last_read_at', 'is_typing', 'typing_at', 'is_blocked')
+            ->withTimestamps()
+            ->orderBy('last_message_at', 'desc');
+    }
+
+    /**
+     * Get all messages sent by this user.
+     */
+    public function messages()
+    {
+        return $this->hasMany(Message::class);
+    }
+
+    /**
+     * Get all message reactions by this user.
+     */
+    public function messageReactions()
+    {
+        return $this->hasMany(MessageReaction::class);
+    }
 }

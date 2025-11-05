@@ -6,7 +6,7 @@ require __DIR__.'/auth.php';
 
 Route::livewire('/', 'web.home')->name('web.home');
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware('auth')->group(function () {
     Route::livewire('/app/', 'app.dashboard')->name('app.dashboard');
 
     Route::livewire('/app/profile/', 'app.profile')->name('app.profile');
@@ -21,6 +21,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::livewire('/app/activities/feed/', 'app.activity-feed')->name('app.activity.feed');
     Route::livewire('/app/activities/my/', 'app.my-activities')->name('app.activity.my');
+
+    // Chat routes
+    Route::livewire('/app/chat/{conversation?}', 'chat-component')->name('chat.index');
 });
 
 // Push notification API routes (now accessible to both guests and authenticated users)

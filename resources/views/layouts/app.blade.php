@@ -44,7 +44,7 @@
           <x-menu activate-by-route>
             <x-menu-item :title="__('Dashboard')" icon="o-home" :link="route('app.dashboard')" route="app.dashboard" />
             <x-menu-item :title="__('Profile')" icon="o-user-circle" :link="route('app.profile')" route="app.profile"/>
-            <x-menu-item title="Messages" icon="o-envelope" link="###" />
+            <x-menu-item :title="__('Chat')" icon="o-chat-bubble-left-right" :link="route('chat.index')" route="chat.index" />
             <x-menu-sub title="User Settings" icon="o-user">
               @can('activity.my')
                 <x-menu-item :title="__('Push Notifications')" icon="o-bell" :link="route('app.notifications')" route="app.notifications"/>
