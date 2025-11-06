@@ -252,10 +252,12 @@
                 {{-- MESSAGES AREA --}}
                 {{-- ========================================== --}}
                 <div
-                    class="flex-1 overflow-y-auto p-4 space-y-4 bg-base-100"
+                    class="flex-1 overflow-y-auto p-4 space-y-4 bg-base-100 relative"
                     id="message-container"
-                    x-init="$el.scrollTop = $el.scrollHeight"
-                    @scroll-to-bottom.window="$el.scrollTop = $el.scrollHeight"
+                    x-init="scrollToBottom($el)"
+                    @scroll-to-bottom.window="scrollToBottom($el)"
+                    @scroll="handleScroll($el)"
+                    x-ref="messageContainer"
                 >
                     {{-- Message Search Alert --}}
                     @if($messageSearch)
@@ -291,6 +293,17 @@
                             }
                         }
                     @endphp
+
+                    {{-- Loading Indicator --}}
+                    <div 
+                        x-show="isLoadingMore" 
+                        class="flex justify-center py-3"
+                    >
+                        <div class="flex items-center gap-2 text-sm text-base-content/60">
+                            <span class="loading loading-spinner loading-sm"></span>
+                            <span>Loading older messages...</span>
+                        </div>
+                    </div>
 
                     {{-- Messages Loop --}}
                     @forelse($this->messages as $message)
@@ -348,35 +361,36 @@
                                             @endif
 
                                             @if($message->body)
-                                                <p class="text-sm break-words">
+                                                <div class="text-sm break-words max-w-none">
                                                     @if($messageSearch && str_contains(strtolower($message->body), strtolower($messageSearch)))
-                                                        {!! preg_replace('/(' . preg_quote($messageSearch, '/') . ')/i', '<mark class="bg-yellow-300 text-black px-1 rounded">$1</mark>', e($message->body)) !!}
+                                                        {!! preg_replace('/(' . preg_quote($messageSearch, '/') . ')/i', '<mark class="bg-yellow-300 text-black px-1 rounded">$1</mark>', $message->formatted_body) !!}
                                                     @else
-                                                        {{ $message->body }}
+                                                        {!! $message->formatted_body !!}
                                                     @endif
-                                                </p>
+                                                </div>
                                             @endif
 
-                                            @if($message->attachments->count() > 0)
+                                            @if($message->hasAttachments())
                                                 <div class="mt-2 space-y-2">
-                                                    @foreach($message->attachments as $attachment)
-                                                        @if($attachment->isImage())
+                                                    @foreach($message->getMedia('attachments') as $media)
+                                                        @if(str_starts_with($media->mime_type, 'image/'))
                                                             <img
-                                                                src="{{ $attachment->url }}"
-                                                                alt="{{ $attachment->file_name }}"
+                                                                src="{{ $media->getUrl() }}"
+                                                                alt="{{ $media->file_name }}"
                                                                 class="max-w-xs rounded-lg cursor-pointer hover:opacity-90 transition"
-                                                                onclick="window.open('{{ $attachment->url }}', '_blank')"
+                                                                onclick="window.open('{{ $media->getUrl() }}', '_blank')"
                                                             />
                                                         @else
                                                             <a
-                                                                href="{{ $attachment->url }}"
+                                                                href="{{ $media->getUrl() }}"
                                                                 target="_blank"
+                                                                download
                                                                 class="flex items-center gap-2 p-2 bg-base-300/50 rounded-lg hover:bg-base-300 transition"
                                                             >
                                                                 <x-icon name="o-document" class="w-5 h-5" />
                                                                 <div class="flex-1 min-w-0">
-                                                                    <p class="text-xs font-medium truncate">{{ $attachment->file_name }}</p>
-                                                                    <p class="text-xs opacity-70">{{ $attachment->formatted_size }}</p>
+                                                                    <p class="text-xs font-medium truncate">{{ $media->file_name }}</p>
+                                                                    <p class="text-xs opacity-70">{{ $media->human_readable_size }}</p>
                                                                 </div>
                                                             </a>
                                                         @endif
@@ -487,6 +501,21 @@
                             <p class="text-base-content/60">No messages yet. Start the conversation!</p>
                         </div>
                     @endforelse
+
+                    {{-- Go to Latest Button --}}
+                    <div 
+                        x-show="showGoToLatest" 
+                        x-transition
+                        class="fixed bottom-24 right-8 z-10"
+                    >
+                        <button 
+                            @click="scrollToBottom($refs.messageContainer); showGoToLatest = false"
+                            class="btn btn-primary btn-circle shadow-lg"
+                            title="Go to latest messages"
+                        >
+                            <x-icon name="o-chevron-down" class="w-5 h-5" />
+                        </button>
+                    </div>
                 </div>
 
                 {{-- ========================================== --}}
@@ -598,10 +627,13 @@
                                 placeholder="@if($isBlocked || $otherUserBlocked) Cannot send messages @else Type a message... @endif"
                                 rows="1"
                                 class="textarea textarea-bordered w-full resize-none"
-                                @keydown.enter.prevent="if (!$event.shiftKey) { $wire.sendMessage(); }"
+                                @keydown.enter="if (!$event.shiftKey) { $event.preventDefault(); $wire.sendMessage(); }"
                                 @input.debounce.500ms="whisperTyping()"
                                 @if($isBlocked || $otherUserBlocked) disabled @endif
                             ></textarea>
+                          @error('body')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                          @enderror
                         </div>
 
                         <button
@@ -693,6 +725,9 @@
     activeConversationTyping: false,  // Typing state for active conversation
     activeTypingUserName: '',         // User name typing in active conversation
     activeTypingTimeout: null,        // Timeout for active conversation typing
+    scrollHeight: 0,          // Track scroll height for load more
+    isLoadingMore: false,     // Prevent multiple loads
+    showGoToLatest: false,    // Show "Go to Latest" button
 
     // ==========================================
     // INITIALIZATION
@@ -753,7 +788,7 @@
     // ==========================================
     setupChannels() {
       console.log('🔄 Setting up all channels...');
-      
+
       // Initialize typing state for all conversations
       this.conversationIds.forEach(convId => {
         this.typingConversations[convId] = false;
@@ -1018,6 +1053,55 @@
       console.log('📥 Received reaction whisper:', e);
       // Refresh messages to show new reaction
       this.refreshMessages();
+    },
+
+    // ==========================================
+    // SCROLL HELPERS
+    // ==========================================
+    scrollToBottom(container) {
+      setTimeout(() => {
+        container.scrollTop = container.scrollHeight;
+        this.showGoToLatest = false;
+      }, 100);
+    },
+
+    handleScroll(container) {
+      const scrollTop = container.scrollTop;
+      const scrollHeight = container.scrollHeight;
+      const clientHeight = container.clientHeight;
+      const scrolledFromBottom = scrollHeight - scrollTop - clientHeight;
+
+      // Show "Go to Latest" button if scrolled more than 200px from bottom
+      this.showGoToLatest = scrolledFromBottom > 200;
+
+      // Auto-load more messages when scrolled near top (Messenger style)
+      if (scrollTop < 100 && !this.isLoadingMore && this.$wire.hasMoreMessages) {
+        this.loadMoreMessages(container);
+      }
+    },
+
+    loadMoreMessages(container) {
+      if (this.isLoadingMore) return;
+      
+      this.isLoadingMore = true;
+      
+      // Save current scroll position and height
+      const oldScrollHeight = container.scrollHeight;
+      const oldScrollTop = container.scrollTop;
+
+      // Load older messages
+      this.$wire.loadOlderMessages().then(() => {
+        this.$nextTick(() => {
+          // Calculate new height and maintain scroll position
+          const newScrollHeight = container.scrollHeight;
+          const heightDiff = newScrollHeight - oldScrollHeight;
+          
+          // Keep user at same message (adjust for new content above)
+          container.scrollTop = oldScrollTop + heightDiff;
+          
+          this.isLoadingMore = false;
+        });
+      });
     },
 
     destroy() {

@@ -64,7 +64,7 @@ class NewMessageNotification extends Notification implements ShouldQueue
     public function toWebPush($notifiable, $notification)
     {
         $sender = $this->message->user;
-        $hasAttachment = $this->message->attachments()->exists();
+        $hasAttachment = $this->message->hasAttachments();
         
         // Determine body text
         if ($hasAttachment && !$this->message->body) {

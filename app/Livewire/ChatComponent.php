@@ -31,6 +31,7 @@ class ChatComponent extends Component
     public ?int $selectedConversationId = null;
     public string $search = '';
     public string $messageSearch = '';
+    public bool $showSearchBar = false;
 
     // ==========================================
     // MESSAGE STATE
@@ -39,6 +40,13 @@ class ChatComponent extends Component
     public array $attachments = [];
     public ?int $replyingTo = null;
     public ?int $editingMessageId = null;
+
+    // ==========================================
+    // PAGINATION STATE
+    // ==========================================
+    public int $messagesPerPage = 20;
+    public int $messagesOffset = 0;
+    public bool $hasMoreMessages = true;
 
     // ==========================================
     // UI STATE
@@ -148,14 +156,41 @@ class ChatComponent extends Component
         }
 
         $query = Message::where('conversation_id', $this->selectedConversationId)
-            ->with(['user', 'parent.user', 'attachments', 'reactions.user'])
+            ->with(['user', 'parent.user', 'media', 'reactions.user'])
             ->where('is_deleted', false);
 
         if ($this->messageSearch) {
             $query->where('body', 'like', '%' . $this->messageSearch . '%');
         }
 
-        return $query->orderBy('created_at', 'asc')->limit(50)->get();
+        // Get total count
+        $totalMessages = $query->count();
+        
+        // Calculate how many messages to load (all loaded so far)
+        $loadCount = $this->messagesOffset + $this->messagesPerPage;
+        
+        // Check if there are more messages
+        $this->hasMoreMessages = $totalMessages > $loadCount;
+
+        // Get all messages up to current offset (newest first, then reverse)
+        return $query->orderBy('created_at', 'desc')
+            ->take($loadCount)
+            ->get()
+            ->reverse()
+            ->values();
+    }
+
+    public function loadOlderMessages()
+    {
+        if ($this->hasMoreMessages) {
+            $this->messagesOffset += $this->messagesPerPage;
+        }
+    }
+
+    public function resetMessages()
+    {
+        $this->messagesOffset = 0;
+        $this->hasMoreMessages = true;
     }
 
     // ==========================================
@@ -166,6 +201,7 @@ class ChatComponent extends Component
         $this->selectedConversationId = $conversationId;
         $this->messageSearch = '';
         $this->replyingTo = null;
+        $this->resetMessages();
         $this->resetPage();
         $this->markAsRead();
         $this->dispatch('conversationSelected', conversationId: $conversationId);
@@ -229,19 +265,16 @@ class ChatComponent extends Component
             'body' => $this->body,
         ]);
 
-        // Handle attachments
+        // Handle attachments using Spatie Media Library
         if (!empty($this->attachments)) {
             foreach ($this->attachments as $attachment) {
-                $path = $attachment->store('chat-attachments', 'public');
-
-                MessageAttachment::create([
-                    'message_id' => $message->id,
-                    'file_name' => $attachment->getClientOriginalName(),
-                    'file_path' => $path,
-                    'file_type' => $this->getFileType($attachment->getMimeType()),
-                    'mime_type' => $attachment->getMimeType(),
-                    'file_size' => $attachment->getSize(),
-                ]);
+                $message->addMedia($attachment->getRealPath())
+                    ->usingFileName($attachment->getClientOriginalName())
+                    ->withCustomProperties([
+                        'mime_type' => $attachment->getMimeType(),
+                        'size' => $attachment->getSize(),
+                    ])
+                    ->toMediaCollection('attachments');
             }
         }
 
@@ -472,19 +505,6 @@ class ChatComponent extends Component
         $conversation = Conversation::find($this->selectedConversationId);
         if ($conversation) {
             $conversation->markAsRead(auth()->id());
-        }
-    }
-
-    private function getFileType(string $mimeType): string
-    {
-        if (str_starts_with($mimeType, 'image/')) {
-            return 'image';
-        } elseif (str_starts_with($mimeType, 'video/')) {
-            return 'video';
-        } elseif (str_starts_with($mimeType, 'audio/')) {
-            return 'audio';
-        } else {
-            return 'document';
         }
     }
 

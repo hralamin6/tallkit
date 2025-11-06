@@ -7,10 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Builder;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
-class Message extends Model
+class Message extends Model implements HasMedia
 {
-    use HasFactory;
+    use HasFactory, InteractsWithMedia;
 
     protected $fillable = [
         'conversation_id',
@@ -28,7 +30,16 @@ class Message extends Model
         'is_deleted' => 'boolean',
     ];
 
-    protected $with = ['attachments', 'reactions'];
+    protected $with = ['reactions'];
+
+    /**
+     * Register media collections.
+     */
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('attachments')
+            ->useDisk('public');
+    }
 
     /**
      * Get the conversation that owns the message.
@@ -63,11 +74,20 @@ class Message extends Model
     }
 
     /**
-     * Get attachments for the message.
+     * Get attachments for the message (legacy - kept for compatibility).
+     * Use getMedia('attachments') instead.
      */
     public function attachments(): HasMany
     {
         return $this->hasMany(MessageAttachment::class);
+    }
+
+    /**
+     * Check if message has attachments.
+     */
+    public function hasAttachments(): bool
+    {
+        return $this->getMedia('attachments')->count() > 0;
     }
 
     /**
@@ -122,7 +142,10 @@ class Message extends Model
             'body' => null,
         ]);
 
-        // Delete attachments
+        // Delete media attachments
+        $this->clearMediaCollection('attachments');
+        
+        // Delete legacy attachments if any
         $this->attachments()->delete();
     }
 
@@ -143,5 +166,51 @@ class Message extends Model
                 ];
             })
             ->toArray();
+    }
+
+    /**
+     * Get formatted body with rich text support (safe HTML)
+     */
+    public function getFormattedBodyAttribute(): string
+    {
+        if (!$this->body) {
+            return '';
+        }
+
+        // Escape HTML first for security
+        $formatted = e($this->body);
+        
+        // Convert URLs to clickable links
+        $formatted = preg_replace(
+            '/(https?:\/\/[^\s]+)/i',
+            '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:underline break-all">$1</a>',
+            $formatted
+        );
+        
+        // Convert **bold** to <strong>
+        $formatted = preg_replace(
+            '/\*\*(.+?)\*\*/s',
+            '<strong class="font-bold">$1</strong>',
+            $formatted
+        );
+        
+        // Convert *italic* to <em>
+        $formatted = preg_replace(
+            '/\*(.+?)\*/s',
+            '<em class="italic">$1</em>',
+            $formatted
+        );
+        
+        // Convert `code` to <code>
+        $formatted = preg_replace(
+            '/`(.+?)`/s',
+            '<code class="px-1.5 py-0.5 bg-base-300 rounded text-xs font-mono">$1</code>',
+            $formatted
+        );
+        
+        // Convert line breaks
+        $formatted = nl2br($formatted);
+        
+        return $formatted;
     }
 }
