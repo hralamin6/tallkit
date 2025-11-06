@@ -37,7 +37,8 @@ self.addEventListener('push', (event) => {
         body: 'You have a new notification',
         icon: '/logo.png',
         badge: '/logo.png',
-        data: { url: '/' }
+        data: { url: '/' },
+        actions: []
     };
 
     if (event.data) {
@@ -55,7 +56,11 @@ self.addEventListener('push', (event) => {
         vibrate: [200, 100, 200],
         data: data.data || {},
         tag: data.tag || 'notification',
-        requireInteraction: data.requireInteraction || false
+        requireInteraction: data.requireInteraction || false,
+        renotify: data.renotify || false,
+        actions: data.actions || [],
+        timestamp: data.timestamp || Date.now(),
+        silent: false
     };
 
     event.waitUntil(
@@ -65,20 +70,60 @@ self.addEventListener('push', (event) => {
 
 // Notification click
 self.addEventListener('notificationclick', (event) => {
-    console.log('[SW] Notification clicked');
+    console.log('[SW] Notification clicked', event.action);
     event.notification.close();
 
-    const urlToOpen = event.notification.data?.url || '/';
+    const notificationData = event.notification.data || {};
+    const action = event.action;
+    let urlToOpen = notificationData.url || '/';
 
+    // Handle different actions
+    if (action === 'reply') {
+        // Open chat page for quick reply
+        urlToOpen = notificationData.url;
+        console.log('[SW] Reply action - opening chat');
+    } else if (action === 'view') {
+        // Open chat page to view message
+        urlToOpen = notificationData.url;
+        console.log('[SW] View action - opening chat');
+    } else if (action === 'mark_read') {
+        // Mark as read via API call
+        console.log('[SW] Mark as read action');
+        event.waitUntil(
+            fetch('/api/messages/' + notificationData.message_id + '/mark-read', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                credentials: 'include'
+            }).then(response => {
+                console.log('[SW] Message marked as read');
+            }).catch(error => {
+                console.error('[SW] Failed to mark as read:', error);
+            })
+        );
+        return; // Don't open window for mark as read
+    }
+
+    // Open or focus window
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true })
             .then((clientList) => {
+                // Check if chat page is already open
                 for (let client of clientList) {
-                    if (client.url === urlToOpen && 'focus' in client) {
+                    const clientUrl = new URL(client.url);
+                    const targetUrl = new URL(urlToOpen, self.location.origin);
+                    
+                    if (clientUrl.pathname === targetUrl.pathname && 'focus' in client) {
+                        console.log('[SW] Focusing existing window');
                         return client.focus();
                     }
                 }
+                
+                // Open new window if not found
                 if (clients.openWindow) {
+                    console.log('[SW] Opening new window:', urlToOpen);
                     return clients.openWindow(urlToOpen);
                 }
             })

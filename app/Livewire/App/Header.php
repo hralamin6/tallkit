@@ -5,10 +5,13 @@ namespace App\Livewire\App;
 use App\Models\Conversation;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Session;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 class Header extends Component
 {
+
+
     public function switchLanguage($locale)
     {
         if (in_array($locale, ['en', 'ar', 'bn'])) {
@@ -39,6 +42,13 @@ class Header extends Component
         return $this->unreadConversations->sum(function ($conversation) {
             return $conversation->getUnreadCount(auth()->id());
         });
+    }
+
+    #[On('message-received')]
+    public function updateCount()
+    {
+        // Simply trigger a re-render to update unread counts
+        $this->dispatch('$refresh');
     }
 
     public function render()

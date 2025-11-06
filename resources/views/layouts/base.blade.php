@@ -42,11 +42,94 @@
 {{--        <script defer src="https://unpkg.com/cropperjs@1.6.1/dist/cropper.min.js"></script>--}}
 {{--      <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.1/Sortable.min.js"></script>--}}
 {{--      <script src="https://cdn.tiny.cloud/1/mbka6lqu2y9tf2q7tvoe1clyhs6oxwsct5ma91a7re40y5ms/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>--}}
+      {{-- ========================================== --}}
+      {{-- GLOBAL ECHO LISTENER FOR HEADER BADGE --}}
+      {{-- Updates unread count on all pages except chat --}}
+      {{-- ========================================== --}}
+      @if(auth()->check())
+        <script>
+          window.GlobalChatListener = window.GlobalChatListener || {
+            channels: {},
+            conversationIds: @json(auth()->user()->conversations->pluck('id')),
+            initialized: false,
+
+            init() {
+              // Don't run on chat page (chat component handles its own listeners)
+              if (this.isChatPage()) {
+                console.log('⏭️ Skipping global listeners (on chat page)');
+                this.cleanup();
+                return;
+              }
+
+              // Prevent duplicate initialization
+              if (this.initialized && Object.keys(this.channels).length > 0) {
+                console.log('ℹ️ Global listeners already active');
+                return;
+              }
+
+              console.log('🔌 Setting up global chat listeners');
+              this.cleanup();
+              this.subscribe();
+              this.initialized = true;
+            },
+
+            isChatPage() {
+              return window.location.pathname.includes('/chat');
+            },
+
+            cleanup() {
+              Object.keys(this.channels).forEach(convId => {
+                Echo.leave(`chat.${convId}`);
+              });
+              this.channels = {};
+              this.initialized = false;
+            },
+
+            subscribe() {
+              if (!window.Echo) {
+                console.warn('⚠️ Echo not available');
+                return;
+              }
+
+              this.conversationIds.forEach(convId => {
+                this.channels[convId] = Echo.private(`chat.${convId}`)
+                  .listenForWhisper('new-message', (e) => {
+                    console.log(`📨 New message in conversation ${convId}`);
+                    Livewire.dispatch('message-received');
+                  });
+              });
+              console.log(`✅ Listening to ${this.conversationIds.length} conversations`);
+            }
+          };
+
+          // Initialize on page load (once)
+          if (!window.GlobalChatListener._listenersAttached) {
+            document.addEventListener('livewire:initialized', () => {
+              window.GlobalChatListener.init();
+            });
+
+            // Re-initialize after Livewire navigation
+            document.addEventListener('livewire:navigated', () => {
+              window.GlobalChatListener.init();
+            });
+
+            window.GlobalChatListener._listenersAttached = true;
+          } else {
+            // Already attached, just re-init
+            window.GlobalChatListener.init();
+          }
+        </script>
+
+      @endif
+
     </head>
 
     <body>
         @yield('body')
         <x-toast />
         @RegisterServiceWorkerScript
+
+
     </body>
+
 </html>

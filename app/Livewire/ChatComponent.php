@@ -8,42 +8,75 @@ use App\Models\Message;
 use App\Models\MessageAttachment;
 use App\Models\MessageReaction;
 use App\Models\User;
+use Illuminate\Support\Facades\Storage;
+use Livewire\Attributes\Layout;
+use Livewire\Attributes\On;
+use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
-use Livewire\Attributes\On;
-use Illuminate\Support\Facades\Storage;
+use Mary\Traits\Toast;
 
+#[Title('Chat')]
+#[Layout('layouts.app')]
 class ChatComponent extends Component
 {
-    use WithFileUploads, WithPagination;
+    use Toast;
+    use WithFileUploads;
+    use WithPagination;
 
-    // State
-    public $selectedConversationId = null;
-    public $search = '';
-    public $showNewChatModal = false;
-    public $messageSearch = '';
+    // ==========================================
+    // CONVERSATION STATE
+    // ==========================================
+    public ?int $selectedConversationId = null;
+    public string $search = '';
+    public string $messageSearch = '';
 
-    // Message input
-    public $body = '';
-    public $attachments = [];
-    public $replyingTo = null;
-    public $editingMessageId = null;
+    // ==========================================
+    // MESSAGE STATE
+    // ==========================================
+    public string $body = '';
+    public array $attachments = [];
+    public ?int $replyingTo = null;
+    public ?int $editingMessageId = null;
 
-    protected $rules = [
-        'body' => 'required_without:attachments|string|max:5000',
-        'attachments.*' => 'file|max:10240',
+    // ==========================================
+    // UI STATE
+    // ==========================================
+    public bool $showNewChatModal = false;
+
+    // ==========================================
+    // QUERY STRING
+    // ==========================================
+    protected $queryString = [
+        'selectedConversationId' => ['except' => null],
+        'search' => ['except' => ''],
     ];
+
+    // ==========================================
+    // VALIDATION RULES
+    // ==========================================
+    public function rules(): array
+    {
+        return [
+            'body' => 'required_without:attachments|string|max:5000',
+            'attachments.*' => 'file|max:10240', // 10MB max
+        ];
+    }
+
+    // ==========================================
+    // LIFECYCLE HOOKS
+    // ==========================================
 
     public function mount($conversation = null)
     {
         // If conversation ID provided in URL, select it
-        if ($conversation) {
-            $conv = Conversation::find($conversation);
-            if ($conv && $conv->hasUser(auth()->id())) {
-                $this->selectedConversationId = $conv->id;
-                $this->markAsRead();
-                $this->markUnreadMessagesAsRead();
+      if ($conversation) {
+//        dd($conversation);
+        $conv = Conversation::find($conversation);
+        if ($conv && $conv->hasUser(auth()->id())) {
+              $this->selectedConversationId = $conv->id;
+          $this->selectConversation($conv->id);
                 return;
             }
         }
@@ -52,15 +85,28 @@ class ChatComponent extends Component
         $firstConversation = $this->getConversationsProperty()->first();
         if ($firstConversation) {
             $this->selectedConversationId = $firstConversation->id;
-            $this->markAsRead();
-            $this->markUnreadMessagesAsRead();
+          $this->selectConversation($firstConversation->id);
+
         }
     }
 
+    public function updatingSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingMessageSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    // ==========================================
+    // COMPUTED PROPERTIES
+    // ==========================================
     public function getConversationsProperty()
     {
         $userId = auth()->id();
-        
+
         return auth()->user()
             ->conversations()
             ->with(['userOne', 'userTwo', 'latestMessage.user'])
@@ -112,7 +158,10 @@ class ChatComponent extends Component
         return $query->orderBy('created_at', 'asc')->limit(50)->get();
     }
 
-    public function selectConversation($conversationId)
+    // ==========================================
+    // CONVERSATION ACTIONS
+    // ==========================================
+    public function selectConversation(int $conversationId): void
     {
         $this->selectedConversationId = $conversationId;
         $this->messageSearch = '';
@@ -120,12 +169,10 @@ class ChatComponent extends Component
         $this->resetPage();
         $this->markAsRead();
         $this->dispatch('conversationSelected', conversationId: $conversationId);
-      $this->markUnreadMessagesAsRead();
-
-
+        $this->markUnreadMessagesAsRead();
     }
 
-    public function startNewChat($userId)
+    public function startNewChat($userId): void
     {
         $conversation = Conversation::findOrCreateBetween(auth()->id(), $userId);
         $this->selectedConversationId = $conversation->id;
@@ -134,7 +181,10 @@ class ChatComponent extends Component
         $this->dispatch('conversationSelected', conversationId: $conversation->id);
     }
 
-    public function sendMessage()
+    // ==========================================
+    // MESSAGE ACTIONS
+    // ==========================================
+    public function sendMessage(): void
     {
         // If editing, update instead
         if ($this->editingMessageId) {
@@ -167,7 +217,7 @@ class ChatComponent extends Component
             ->value('is_blocked');
 
         if ($isBlockedByMe || $isBlockedByOther) {
-            session()->flash('error', 'Cannot send message. This conversation is blocked.');
+            $this->error('Cannot send message. This conversation is blocked.');
             return;
         }
 
@@ -202,7 +252,10 @@ class ChatComponent extends Component
 
         // Send notification
         $otherUser = $conversation->getOtherUser(auth()->id());
-        $otherUser->notify(new \App\Notifications\NewMessageNotification($message));
+
+        // Check if user is online to send push notification
+        $sendPush = $otherUser->isOnline();
+        $otherUser->notify(new \App\Notifications\NewMessageNotification($message, $sendPush));
 
         // Reset form
         $this->reset(['body', 'attachments', 'replyingTo']);
@@ -217,40 +270,40 @@ class ChatComponent extends Component
         // No broadcast needed - using whisper instead
     }
 
-    public function setReplyingTo($messageId)
+    public function setReplyingTo(int $messageId): void
     {
         $this->replyingTo = $messageId;
     }
 
-    public function cancelReply()
+    public function cancelReply(): void
     {
         $this->replyingTo = null;
     }
 
-    public function editMessage($messageId)
+    public function editMessage(int $messageId): void
     {
         $message = Message::find($messageId);
-        
+
         if ($message && $message->user_id === auth()->id()) {
             $this->editingMessageId = $messageId;
             $this->body = $message->body;
         }
     }
 
-    public function cancelEdit()
+    public function cancelEdit(): void
     {
         $this->editingMessageId = null;
         $this->body = '';
     }
 
-    public function updateMessage()
+    public function updateMessage(): void
     {
         if (!$this->editingMessageId) {
             return;
         }
 
         $message = Message::find($this->editingMessageId);
-        
+
         if ($message && $message->user_id === auth()->id()) {
             $message->update([
                 'body' => $this->body,
@@ -258,12 +311,12 @@ class ChatComponent extends Component
             ]);
 
             broadcast(new \App\Events\MessageUpdated($message))->toOthers();
-            
+
             $this->cancelEdit();
         }
     }
 
-    public function deleteMessage($messageId)
+    public function deleteMessage(int $messageId): void
     {
         $message = Message::find($messageId);
 
@@ -273,87 +326,93 @@ class ChatComponent extends Component
         }
     }
 
-    public function removeAttachment($index)
+    public function removeAttachment(int $index): void
     {
         unset($this->attachments[$index]);
         $this->attachments = array_values($this->attachments);
     }
 
-    public function deleteConversation()
+    // ==========================================
+    // CONVERSATION MANAGEMENT
+    // ==========================================
+    public function deleteConversation(): void
     {
         if (!$this->selectedConversationId) {
             return;
         }
 
         $conversation = Conversation::find($this->selectedConversationId);
-        
+
         if ($conversation && $conversation->hasUser(auth()->id())) {
             // Delete all messages in the conversation
             Message::where('conversation_id', $this->selectedConversationId)->delete();
-            
+
             // Delete the conversation
             $conversation->delete();
-            
+
             // Reset selection
             $this->selectedConversationId = null;
             $this->body = '';
             $this->replyingTo = null;
             $this->editingMessageId = null;
-            
-            session()->flash('message', 'Conversation deleted successfully.');
+
+            $this->success('Conversation deleted successfully.');
         }
     }
 
-    public function blockUser()
+    public function blockUser(): void
     {
         if (!$this->selectedConversationId) {
             return;
         }
 
         $conversation = Conversation::find($this->selectedConversationId);
-        
+
         if ($conversation && $conversation->hasUser(auth()->id())) {
             // Update is_blocked field in conversation_user pivot table
             \DB::table('conversation_user')
                 ->where('conversation_id', $this->selectedConversationId)
                 ->where('user_id', auth()->id())
                 ->update(['is_blocked' => true]);
-            
-            session()->flash('message', 'User blocked successfully.');
+
+            $this->success('User blocked successfully.');
         }
     }
 
-    public function unblockUser()
+    public function unblockUser(): void
     {
         if (!$this->selectedConversationId) {
             return;
         }
 
         $conversation = Conversation::find($this->selectedConversationId);
-        
+
         if ($conversation && $conversation->hasUser(auth()->id())) {
             // Update is_blocked field in conversation_user pivot table
             \DB::table('conversation_user')
                 ->where('conversation_id', $this->selectedConversationId)
                 ->where('user_id', auth()->id())
                 ->update(['is_blocked' => false]);
-            
-            session()->flash('message', 'User unblocked successfully.');
+
+            $this->success('User unblocked successfully.');
         }
     }
 
-    public function refreshMessages()
+    // ==========================================
+    // HELPER METHODS
+    // ==========================================
+    public function refreshMessages(): void
     {
         // Mark unread messages as read when refreshing
         $this->markUnreadMessagesAsRead();
     }
 
-    public function refreshConversations()
+    public function refreshConversations(): void
     {
         // Just trigger a re-render
     }
 
-    public function isUserBlocked()
+    public function isUserBlocked(): bool
     {
         if (!$this->selectedConversationId) {
             return false;
@@ -368,7 +427,7 @@ class ChatComponent extends Component
         return (bool) $result;
     }
 
-    private function markUnreadMessagesAsRead()
+    private function markUnreadMessagesAsRead(): void
     {
         if (!$this->selectedConversationId) {
             return;
@@ -416,7 +475,7 @@ class ChatComponent extends Component
         }
     }
 
-    private function getFileType($mimeType)
+    private function getFileType(string $mimeType): string
     {
         if (str_starts_with($mimeType, 'image/')) {
             return 'image';
@@ -448,6 +507,9 @@ class ChatComponent extends Component
         return Conversation::with(['userOne', 'userTwo'])->find($this->selectedConversationId);
     }
 
+    // ==========================================
+    // RENDER
+    // ==========================================
     public function render()
     {
         return view('livewire.chat-component')->layout('layouts.app');

@@ -27,6 +27,10 @@ class Notifications extends Component
     // Notification Preferences
     public array $preferences = [];
     public array $categories = [
+        'chat' => [
+            'name' => 'Chat Messages',
+            'description' => 'New messages in conversations',
+        ],
         'general' => [
             'name' => 'General',
             'description' => 'General notifications and updates',

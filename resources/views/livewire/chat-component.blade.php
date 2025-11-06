@@ -1,10 +1,16 @@
+{{-- ========================================== --}}
+{{-- CHAT COMPONENT --}}
+{{-- Real-time messaging with Laravel Echo --}}
+{{-- ========================================== --}}
 <div
     class="h-[calc(100vh-8rem)]"
     x-data="chatApp()"
     x-init="init()"
     @message-sent.window="handleMessageSent()"
 >
-    {{-- Flash Messages --}}
+    {{-- ========================================== --}}
+    {{-- FLASH MESSAGES --}}
+    {{-- ========================================== --}}
     @if (session()->has('message'))
         <div class="alert alert-success shadow-lg mb-4" x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 3000)">
             <x-icon name="o-check-circle" class="w-5 h-5" />
@@ -20,9 +26,11 @@
     @endif
 
     <div class="flex h-full bg-base-100 rounded-xl shadow-xl overflow-hidden">
-        <!-- Conversations List Sidebar -->
+        {{-- ========================================== --}}
+        {{-- SIDEBAR: CONVERSATIONS LIST --}}
+        {{-- ========================================== --}}
         <div class="w-full md:w-96 border-r border-base-300 flex flex-col">
-            <!-- Header -->
+            {{-- Sidebar Header --}}
             <div class="p-4 border-b border-base-300 bg-gradient-to-r from-primary/10 to-secondary/10">
                 <div class="flex items-center justify-between mb-3">
                     <h2 class="text-xl font-bold text-base-content flex items-center gap-2">
@@ -34,7 +42,7 @@
                     </button>
                 </div>
 
-                <!-- Search -->
+                {{-- Conversation Search --}}
                 <x-input
                     wire:model.live.debounce.300ms="search"
                     placeholder="Search conversations..."
@@ -43,7 +51,7 @@
                 />
             </div>
 
-            <!-- Conversations List -->
+            {{-- Conversations List --}}
             <div class="flex-1 overflow-y-auto">
                 @forelse($this->conversations as $conversation)
                     @php
@@ -53,8 +61,10 @@
                         $isActive = $selectedConversationId == $conversation->id;
                     @endphp
 
+                    {{-- Conversation Item --}}
                     <div
                         wire:click="selectConversation({{ $conversation->id }})"
+                        wire:key="conversation-{{ $conversation->id }}"
                         class="p-4 border-b border-base-300 cursor-pointer hover:bg-base-200/50 transition-all duration-200 {{ $isActive ? 'bg-primary/10 border-l-4 border-l-primary' : '' }}"
                     >
                         <div class="flex items-start gap-3">
@@ -103,7 +113,7 @@
                                     </p>
                                 </div>
 
-                                {{-- Typing indicator --}}
+                                {{-- Typing Indicator --}}
                                 <div class="text-xs text-primary flex items-center gap-2 mt-1"
                                      x-show="typingConversations[{{ $conversation->id }}]"
                                      x-cloak>
@@ -113,6 +123,7 @@
                         </div>
                     </div>
                 @empty
+                    {{-- Empty State --}}
                     <div class="flex flex-col items-center justify-center h-full p-8 text-center">
                         <x-icon name="o-chat-bubble-left-right" class="w-16 h-16 text-base-content/30 mb-4" />
                         <p class="text-base-content/60 mb-4">No conversations yet</p>
@@ -124,14 +135,16 @@
             </div>
         </div>
 
-        <!-- Chat Area -->
+        {{-- ========================================== --}}
+        {{-- MAIN CHAT AREA --}}
+        {{-- ========================================== --}}
         <div class="flex-1 flex flex-col">
             @if($selectedConversationId && $this->selectedConversation)
                 @php
                     $otherUser = $this->selectedConversation->getOtherUser(auth()->id());
                 @endphp
 
-                <!-- Chat Header -->
+                {{-- Chat Header --}}
                 <div class="p-4 border-b border-base-300 bg-base-100 shadow-sm">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-3">
@@ -208,7 +221,7 @@
                                         </li>
                                     @else
                                         <li>
-                                            <button 
+                                            <button
                                                 wire:click="blockUser"
                                                 wire:confirm="Are you sure you want to block {{ $otherUser->name }}?"
                                                 class="text-sm text-warning"
@@ -220,7 +233,7 @@
                                     @endif
                                     <div class="divider my-0"></div>
                                     <li>
-                                        <button 
+                                        <button
                                             wire:click="deleteConversation"
                                             wire:confirm="Are you sure you want to delete this conversation? This action cannot be undone."
                                             class="text-sm text-error"
@@ -235,13 +248,16 @@
                     </div>
                 </div>
 
-                <!-- Messages -->
+                {{-- ========================================== --}}
+                {{-- MESSAGES AREA --}}
+                {{-- ========================================== --}}
                 <div
                     class="flex-1 overflow-y-auto p-4 space-y-4 bg-base-100"
                     id="message-container"
                     x-init="$el.scrollTop = $el.scrollHeight"
                     @scroll-to-bottom.window="$el.scrollTop = $el.scrollHeight"
                 >
+                    {{-- Message Search Alert --}}
                     @if($messageSearch)
                         <div class="alert alert-info shadow-lg mb-4">
                             <x-icon name="o-magnifying-glass" class="w-5 h-5" />
@@ -254,12 +270,12 @@
 
                     @php
                         $lastDate = null;
-                        
+
                         // Helper function for Messenger-style time
                         function messengerTime($datetime) {
                             $now = now();
                             $diff = $datetime->diffInSeconds($now);
-                            
+
                             if ($diff < 60) {
                                 return 'Just now';
                             } elseif ($diff < 3600) {
@@ -276,6 +292,7 @@
                         }
                     @endphp
 
+                    {{-- Messages Loop --}}
                     @forelse($this->messages as $message)
                         @php
                             $isOwn = $message->user_id === auth()->id();
@@ -300,7 +317,13 @@
                             </div>
                         @endif
 
-                        <div class="flex {{ $isOwn ? 'justify-end' : 'justify-start' }}" data-message-id="{{ $message->id }}" data-is-own="{{ $isOwn ? 'true' : 'false' }}">
+                        {{-- Message Bubble --}}
+                        <div
+                            class="flex {{ $isOwn ? 'justify-end' : 'justify-start' }}"
+                            wire:key="message-{{ $message->id }}"
+                            data-message-id="{{ $message->id }}"
+                            data-is-own="{{ $isOwn ? 'true' : 'false' }}"
+                        >
                             <div class="flex gap-2 max-w-[75%] {{ $isOwn ? 'flex-row-reverse' : 'flex-row' }}">
                                 @if(!$isOwn)
                                     <div class="avatar">
@@ -458,6 +481,7 @@
                             </div>
                         </div>
                     @empty
+                        {{-- Empty State --}}
                         <div class="flex flex-col items-center justify-center h-full text-center">
                             <x-icon name="o-chat-bubble-left-right" class="w-16 h-16 text-base-content/20 mb-4" />
                             <p class="text-base-content/60">No messages yet. Start the conversation!</p>
@@ -465,7 +489,9 @@
                     @endforelse
                 </div>
 
-                <!-- Message Input -->
+                {{-- ========================================== --}}
+                {{-- MESSAGE INPUT FORM --}}
+                {{-- ========================================== --}}
                 <div class="p-4 border-t border-base-300 bg-base-100">
                     @php
                         $isBlocked = $this->isUserBlocked();
@@ -593,6 +619,7 @@
                     </form>
                 </div>
             @else
+                {{-- Empty State: No Conversation Selected --}}
                 <div class="flex flex-col items-center justify-center h-full text-center p-8">
                     <x-icon name="o-chat-bubble-left-ellipsis" class="w-24 h-24 text-base-content/20 mb-4" />
                     <h3 class="text-xl font-semibold text-base-content/70 mb-2">Select a conversation</h3>
@@ -602,7 +629,9 @@
         </div>
     </div>
 
-    <!-- New Chat Modal -->
+    {{-- ========================================== --}}
+    {{-- NEW CHAT MODAL --}}
+    {{-- ========================================== --}}
     @if($showNewChatModal)
         <div class="modal modal-open">
             <div class="modal-box">
@@ -644,11 +673,16 @@
         </div>
     @endif
 
+{{-- ========================================== --}}
+{{-- ALPINE.JS COMPONENT --}}
+{{-- Real-time features with Laravel Echo --}}
+{{-- ========================================== --}}
 @script
-
 <script>
   Alpine.data('chatApp', () => ({
-
+    // ==========================================
+    // STATE
+    // ==========================================
     conversationId: @js($selectedConversationId),
     echoChannel: null,
     allChannels: {},          // Track all conversation channels
@@ -660,21 +694,23 @@
     activeTypingUserName: '',         // User name typing in active conversation
     activeTypingTimeout: null,        // Timeout for active conversation typing
 
+    // ==========================================
+    // INITIALIZATION
+    // ==========================================
     init() {
       console.log('🚀 Chat app initialized, conversation:', this.conversationId);
       console.log('📋 All conversations:', this.conversationIds);
       console.log('👥 Conversation users map:', this.conversationUsers);
+      console.log('🔌 Echo available:', !!window.Echo);
 
-      // Initialize typing state for all conversations
-      this.conversationIds.forEach(convId => {
-        this.typingConversations[convId] = false;
+      // Setup channels immediately
+      this.setupChannels();
+
+      // Listen for Livewire component updates (better than livewire:navigated)
+      this.$wire.$on('$refresh', () => {
+        console.log('🔄 Component refreshed, re-setting up channels...');
+        this.setupChannels();
       });
-
-      // Setup Echo listeners for ALL conversations
-      this.setupAllConversationChannels();
-
-      // Setup Echo listener for active conversation
-      this.setupEcho();
 
       // Listen for conversation changes
       Livewire.on('conversationSelected', (data) => {
@@ -683,17 +719,14 @@
 
         // Switch to the new conversation channel
         this.setupEcho();
-        
+
         // After switching channel, whisper read status if needed
         setTimeout(() => {
-          if (this.echoChannel) {
-            this.echoChannel.whisper('read', {
-              conversationId: this.conversationId,
-              readBy: {{ auth()->id() }},
-              readAt: Date.now()
-            });
-            console.log('✅ Whispered read status for new conversation');
-          }
+          this.safeWhisper('read', {
+            conversationId: this.conversationId,
+            readBy: {{ auth()->id() }},
+            readAt: Date.now()
+          });
         }, 500);
       });
 
@@ -707,14 +740,30 @@
       // Listen for messages marked as read (for current conversation)
       Livewire.on('messages-marked-read', () => {
         console.log('✓✓ Messages marked as read, whispering...');
-        if (this.echoChannel) {
-          this.echoChannel.whisper('read', {
-            conversationId: this.conversationId,
-            readBy: {{ auth()->id() }},
-            readAt: Date.now()
-          });
-        }
+        this.safeWhisper('read', {
+          conversationId: this.conversationId,
+          readBy: {{ auth()->id() }},
+          readAt: Date.now()
+        });
       });
+    },
+
+    // ==========================================
+    // ECHO SETUP
+    // ==========================================
+    setupChannels() {
+      console.log('🔄 Setting up all channels...');
+      
+      // Initialize typing state for all conversations
+      this.conversationIds.forEach(convId => {
+        this.typingConversations[convId] = false;
+      });
+
+      // Setup Echo listeners for ALL conversations
+      this.setupAllConversationChannels();
+
+      // Setup Echo listener for active conversation
+      this.setupEcho();
     },
 
     setupAllConversationChannels() {
@@ -724,6 +773,15 @@
       }
 
       console.log('🔌 Setting up channels for all conversations');
+
+      // Clear any existing channels first
+      Object.keys(this.allChannels).forEach(convId => {
+        if (this.allChannels[convId]) {
+          console.log('🧹 Cleaning up old channel:', convId);
+          Echo.leave(`chat.${convId}`);
+        }
+      });
+      this.allChannels = {};
 
       // Subscribe to all conversation channels for typing indicators
       this.conversationIds.forEach(convId => {
@@ -794,21 +852,28 @@
       console.log('🔌 Setting up Echo for conversation:', this.conversationId);
 
       const channelName = `chat.${this.conversationId}`;
-      
-      // Use the existing channel from allChannels (already has typing listener)
-      // This prevents duplicate subscriptions
+      const otherUserId = this.conversationUsers[this.conversationId];
+
+      // Get the channel from allChannels
       this.echoChannel = this.allChannels[this.conversationId];
 
-      // Add additional listeners for active conversation only
-      // Note: These will stack up, but Echo handles duplicate listeners gracefully
+      if (!this.echoChannel) {
+        console.error('❌ Channel not found in allChannels for conversation:', this.conversationId);
+        return;
+      }
+
+      // Only attach listeners once per channel
+      if (this.echoChannel._listenersAttached) {
+        console.log('ℹ️ Listeners already attached to this channel');
+        return;
+      }
+      this.echoChannel._listenersAttached = true;
+
+      // Attach all event listeners
       this.echoChannel
         .listenForWhisper('new-message', (e) => {
           console.log('📨 New message (whisper):', e);
-
-          // Only refresh if sender is the other user in this conversation
-          const otherUserId = this.conversationUsers[this.conversationId];
           if (e.senderId == otherUserId) {
-            console.log('✅ Message from conversation user, refreshing...');
             this.refreshMessages();
           } else {
             this.$wire.call('getConversationsProperty');
@@ -816,11 +881,7 @@
         })
         .listen('.MessageUpdated', (e) => {
           console.log('✏️ Message updated:', e);
-
-          // Only refresh if message is from the other user in this conversation
-          const otherUserId = this.conversationUsers[this.conversationId];
           if (e.message.user_id == otherUserId) {
-            console.log('✅ Update from conversation user, refreshing...');
             this.refreshMessages();
           } else {
             this.$wire.call('getConversationsProperty');
@@ -828,11 +889,7 @@
         })
         .listen('.MessageDeleted', (e) => {
           console.log('🗑️ Message deleted:', e);
-
-          // Only refresh if message was from the other user in this conversation
-          const otherUserId = this.conversationUsers[this.conversationId];
           if (e.userId == otherUserId) {
-            console.log('✅ Delete from conversation user, refreshing...');
             this.refreshMessages();
           } else {
             this.$wire.call('getConversationsProperty');
@@ -840,11 +897,7 @@
         })
         .listenForWhisper('reaction', (e) => {
           console.log('😊 Reaction (whisper):', e);
-
-          // Only refresh if reaction is from the other user in this conversation
-          const otherUserId = this.conversationUsers[this.conversationId];
           if (e.userId == otherUserId) {
-            console.log('✅ Reaction from conversation user, refreshing...');
             this.handleWhisperReaction(e);
           } else {
             this.$wire.call('getConversationsProperty');
@@ -852,11 +905,7 @@
         })
         .listenForWhisper('read', (e) => {
           console.log('👁️ Messages read (whisper):', e);
-
-          // Only refresh if read by the other user in this conversation
-          const otherUserId = this.conversationUsers[this.conversationId];
           if (e.readBy == otherUserId) {
-            console.log('✅ Read by conversation user, refreshing...');
             this.$wire.$refresh();
           } else {
             this.$wire.call('getConversationsProperty');
@@ -869,7 +918,7 @@
 
       // Log subscription events
       this.echoChannel.subscription.bind('pusher:subscription_succeeded', () => {
-        console.log('✅ Successfully subscribed to ' + channelName);
+        console.log('✅ Successfully subscribed to', channelName);
       });
 
       this.echoChannel.subscription.bind('pusher:subscription_error', (error) => {
@@ -903,33 +952,43 @@
       }
     },
 
-    whisperTyping() {
-      if (!this.echoChannel) return;
+    // ==========================================
+    // WHISPER HELPERS
+    // ==========================================
+    safeWhisper(eventName, data) {
+      if (!this.echoChannel) {
+        console.warn('⚠️ Cannot whisper: channel not ready');
+        return false;
+      }
 
-      // Send whisper to other users with user ID
-      this.echoChannel.whisper('typing', {
+      try {
+        this.echoChannel.whisper(eventName, data);
+        return true;
+      } catch (error) {
+        console.warn('⚠️ Whisper failed (channel may not be ready):', error.message);
+        return false;
+      }
+    },
+
+    whisperTyping() {
+      this.safeWhisper('typing', {
         typing: true,
         userId: {{ auth()->id() }},
         userName: '{{ auth()->user()->name }}'
       });
-
-      console.log('📤 Whispered typing event with userId:', {{ auth()->id() }});
     },
 
     whisperNewMessage(messageId) {
-      if (!this.echoChannel) return;
-
-      // Whisper to other user that new message arrived
-      this.echoChannel.whisper('new-message', {
+      const success = this.safeWhisper('new-message', {
         messageId: messageId,
         senderId: {{ auth()->id() }},
         timestamp: Date.now()
       });
 
-      console.log('📤 Whispered new message:', messageId);
-
-      // Refresh own messages
-      this.refreshMessages();
+      if (success) {
+        console.log('📤 Whispered new message:', messageId);
+        this.refreshMessages();
+      }
     },
 
     handleWhisperTyping(e) {
