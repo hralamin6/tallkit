@@ -29,9 +29,11 @@ return [
     |
     */
 
-    'component_namespaces' => [
+    'component_namespaces' => [ 
         'layouts' => resource_path('views/layouts'),
-//        'pages' => resource_path('views/pages'),
+         'app' => resource_path('views/app'),
+         'auth' => resource_path('views/auth'), 
+         'web' => resource_path('views/web'),
     ],
 
     /*
@@ -69,8 +71,8 @@ return [
     */
 
     'make_command' => [
-        'type' => 'class', // Options: 'sfc', 'mfc', 'class'
-        'emoji' => false, // Options: true, false
+        'type' => 'mfc', // Options: 'sfc', 'mfc', 'class'
+        'emoji' => true, // Options: true, false
     ],
 
     /*

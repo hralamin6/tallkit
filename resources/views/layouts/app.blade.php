@@ -4,7 +4,7 @@
     <div class="font-sans antialiased">
 
     {{-- The navbar with `sticky` and `full-width` --}}
-    <livewire:app.header/>
+    <livewire:app::header/>
 
     {{-- The main content with `full-width` --}}
       <x-main with-nav full-width>
@@ -43,10 +43,10 @@
           {{-- Activates the menu item when a route matches the `link` property --}}
           <x-menu activate-by-route>
             <x-menu-item :title="__('Dashboard')" icon="o-home" :link="route('app.dashboard')" route="app.dashboard" />
-            <x-menu-item :title="__('Profile')" icon="o-user-circle" :link="route('app.profile')" route="app.profile"/>
-            <x-menu-item :title="__('Chat')" icon="o-chat-bubble-left-right" :link="route('app.chat')" route="app.chat" />
-            <x-menu-item :title="__('AI Chat')" icon="o-chat-bubble-left-right" :link="route('app.ai-chat')" route="app.ai-chat" />
             <x-menu-sub title="User Settings" icon="o-user">
+              <x-menu-item :title="__('Profile')" icon="o-user-circle" :link="route('app.profile')" route="app.profile"/>
+              <x-menu-item :title="__('Chat')" icon="o-chat-bubble-left-right" :link="route('app.chat')" route="app.chat" />
+              <x-menu-item :title="__('AI Chat')" icon="o-chat-bubble-left-right" :link="route('app.ai-chat')" route="app.ai-chat" />
               @can('activity.my')
                 <x-menu-item :title="__('Push Notifications')" icon="o-bell" :link="route('app.notifications')" route="app.notifications"/>
                 <x-menu-item :title="__('My Activities')" icon="o-clock" :link="route('app.activity.my')" route="app.activity.my"/>

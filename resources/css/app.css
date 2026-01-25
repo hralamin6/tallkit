@@ -1,4 +1,4 @@
-/* Import Tailwind CSS framework */
+/* @import url('https://rsms.me/inter/inter.css'); */
 @import 'tailwindcss';
 @plugin "@tailwindcss/typography";
 /* Custom theme configuration with system font stack */
@@ -54,8 +54,33 @@ input:invalid, textarea:invalid, select:invalid {
     @apply cursor-pointer
 }
 
+@layer utilities {
 
-@layer components {
+    *:focus,
+    *:focus-visible,
+    *:focus-within,
+    input:focus,
+    textarea:focus,
+    select:focus,
+    input:focus-visible,
+    textarea:focus-visible,
+    select:focus-visible,
+    button:focus,
+    button:focus-visible,
+    a:focus,
+    a:focus-visible {
+        outline: none !important;
+        box-shadow: none !important;
+        --tw-ring-shadow: 0 0 #0000 !important;
+        --tw-ring-offset-shadow: 0 0 #0000 !important;
+        --tw-ring-width: 0px !important;
+        --tw-ring-color: transparent !important;
+        --tw-ring-offset-width: 0px !important;
+        --tw-ring-offset-color: transparent !important;
+        --tw-ring-inset: initial !important;
+    }
+}
+/* @layer components {
   [class*="input"] {
     @apply !outline-none;
   }
@@ -66,7 +91,7 @@ input:invalid, textarea:invalid, select:invalid {
   [class*="checkbox"] {
     @apply !checkbox-sm !bg-base-100 !text-base-content;
   }
-}
+} */
 
 .cropper-view-box,
 .cropper-face {

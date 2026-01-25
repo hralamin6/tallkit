@@ -1,43 +1,40 @@
 <?php
 
-use App\Livewire\Auth\Login;
-use App\Livewire\Auth\Passwords\Confirm;
-use App\Livewire\Auth\Passwords\Email;
-use App\Livewire\Auth\Passwords\Reset;
-use App\Livewire\Auth\Register;
-use App\Livewire\Auth\Verify;
+use App\Http\Controllers\Auth\EmailVerificationController;
+use App\Http\Controllers\Auth\LogoutController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware('guest')->group(function () {
-    Route::get('login', Login::class)
-        ->name('login');
+/*
+|--------------------------------------------------------------------------
+| Authentication Routes
+|--------------------------------------------------------------------------
+|
+| Here are all the authentication related routes including login, register,
+| password reset, email verification, and logout functionality.
+|
+*/
 
-    Route::get('register', Register::class)
-        ->name('register');
+// Guest routes (login, register, password reset)
+Route::middleware('guest')->group(function () {
+    Route::livewire('/login', 'auth::login')->name('login');
+    Route::livewire('/register', 'auth::register')->name('register');
+    Route::livewire('/password/reset', 'auth::password-reset-email')->name('password.request');
+    Route::livewire('/password/reset/{token}', 'auth::password-reset')->name('password.reset');
 
     Route::get('auth/{provider}/redirect', [\App\Http\Controllers\SocialiteController::class, 'loginSocial'])->name('socialite.auth');
     Route::get('auth/{provider}/callback', [\App\Http\Controllers\SocialiteController::class, 'callbackSocial'])->name('socialite.callback');
 
 });
 
-Route::get('password/reset', Email::class)
-    ->name('password.request');
-
-Route::get('password/reset/{token}', Reset::class)
-    ->name('password.reset');
-
+// Authenticated routes
 Route::middleware('auth')->group(function () {
-    Route::get('email/verify', Verify::class)
-        ->middleware('throttle:6,1')
-        ->name('verification.notice');
+    // Email verification
+    Route::livewire('/email/verify', 'auth::verify')->middleware('throttle:6,1')->name('verification.notice');
+    Route::get('/email/verify/{id}/{hash}', EmailVerificationController::class)->middleware('signed')->name('verification.verify');
 
-    Route::get('password/confirm', Confirm::class)
-        ->name('password.confirm');
+    // Password confirmation
+    Route::livewire('/password/confirm', 'auth::password-confirm')->name('password.confirm');
 
-    Route::get('email/verify/{id}/{hash}', \App\Http\Controllers\Auth\EmailVerificationController::class)
-        ->middleware('signed')
-        ->name('verification.verify');
-
-    Route::post('logout', \App\Http\Controllers\Auth\LogoutController::class)
-        ->name('logout');
+    // Logout
+    Route::post('/logout', LogoutController::class)->name('logout');
 });

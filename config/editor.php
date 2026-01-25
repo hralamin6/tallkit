@@ -32,7 +32,6 @@ return [
         'image_title' => true,
         'automatic_uploads' => true,
         'file_picker_types' => 'image media',
-        'skin' => 'oxide',
         'content_css' => 'default',
         'quickbars_selection_toolbar' => 'bold italic underline | link h2 h3 blockquote',
         'quickbars_insert_toolbar' => 'image media table | hr',
