@@ -1,15 +1,15 @@
-/* Import Tailwind CSS framework */
+/* @import url('https://rsms.me/inter/inter.css'); */
 @import 'tailwindcss';
-
+@plugin "@tailwindcss/typography";
 /* Custom theme configuration with system font stack */
+
 @theme {
-    --font-sans: 'Inter var', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: 'Inter var';
 }
 
 /* Include Tailwind CSS plugins for enhanced form styling and typography */
-@plugin '@tailwindcss/forms';
-@plugin '@tailwindcss/typography';
+/*@plugin '@tailwindcss/forms';*/
+/*@plugin '@tailwindcss/typography';*/
 
 /* Remove default red box-shadow on invalid form elements */
 input:invalid, textarea:invalid, select:invalid {
@@ -20,3 +20,82 @@ input:invalid, textarea:invalid, select:invalid {
 [x-cloak] {
     display: none;
 }
+
+
+
+/**
+    The lines above are intact.
+    The lines below were added by maryUI installer.
+*/
+
+/** daisyUI */
+@plugin "daisyui" {
+    themes: light --default
+    , dark --prefersdark
+;
+}
+
+/* maryUI */
+@source "../../vendor/robsontenorio/mary/src/View/Components/**/*.php";
+
+/* Theme toggle */
+/*@custom-variant dark (&:where(.dark, .dark *));*/
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+/**
+* Paginator - Traditional style
+* Because Laravel defaults does not match well the design of daisyUI.
+*/
+
+.mary-table-pagination span[aria-current="page"] > span {
+    @apply bg-primary text-base-100
+}
+
+.mary-table-pagination button {
+    @apply cursor-pointer
+}
+
+@layer utilities {
+
+    *:focus,
+    *:focus-visible,
+    *:focus-within,
+    input:focus,
+    textarea:focus,
+    select:focus,
+    input:focus-visible,
+    textarea:focus-visible,
+    select:focus-visible,
+    button:focus,
+    button:focus-visible,
+    a:focus,
+    a:focus-visible {
+        outline: none !important;
+        box-shadow: none !important;
+        --tw-ring-shadow: 0 0 #0000 !important;
+        --tw-ring-offset-shadow: 0 0 #0000 !important;
+        --tw-ring-width: 0px !important;
+        --tw-ring-color: transparent !important;
+        --tw-ring-offset-width: 0px !important;
+        --tw-ring-offset-color: transparent !important;
+        --tw-ring-inset: initial !important;
+    }
+}
+/* @layer components {
+  [class*="input"] {
+    @apply !outline-none;
+  }
+    [class*="choices-offline"] {
+    @apply !outline-none;
+  }
+
+  [class*="checkbox"] {
+    @apply !checkbox-sm !bg-base-100 !text-base-content;
+  }
+} */
+
+.cropper-view-box,
+.cropper-face {
+  border: 2px solid #3b82f6 !important;
+  outline: none;
+}
+[x-cloak] { display: none !important; }
