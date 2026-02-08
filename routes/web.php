@@ -16,6 +16,8 @@ Route::middleware('auth')->group(function () {
     Route::livewire('/app/backups/', 'app::backups')->name('app.backups');
     Route::livewire('/app/translate/', 'app::translate')->name('app.translate');
     Route::livewire('/app/pages/', 'app::pages')->name('app.pages');
+    Route::livewire('/app/categories/', 'app::categories')->name('app.categories');
+    Route::livewire('/app/posts/', 'app::posts')->name('app.posts');
 
     Route::livewire('/app/notifications/', 'app::notifications')->name('app.notifications');
 

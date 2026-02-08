@@ -41,6 +41,12 @@ class PermissionSeeder extends Seeder
             'pages' => [
                 'pages.view', 'pages.create', 'pages.edit', 'pages.delete',
             ],
+            'categories' => [
+                'categories.view', 'categories.create', 'categories.update', 'categories.delete',
+            ],
+            'posts' => [
+                'posts.view', 'posts.view-all', 'posts.view-own', 'posts.create', 'posts.update', 'posts.update-own', 'posts.delete', 'posts.delete-own', 'posts.publish', 'posts.feature',
+            ],
         ];
 
         // Create permissions
@@ -71,6 +77,8 @@ class PermissionSeeder extends Seeder
             'profile.update',
             'activity.dashboard', 'activity.feed', 'activity.delete',
             'pages.view', 'pages.create', 'pages.edit',
+            'categories.view', 'categories.create', 'categories.update',
+            'posts.view', 'posts.view-all', 'posts.create', 'posts.update', 'posts.delete', 'posts.publish', 'posts.feature',
         ])->get();
         $admin->syncPermissions($adminPerms);
 
@@ -78,6 +86,11 @@ class PermissionSeeder extends Seeder
             'dashboard.view',
             'profile.update',
             'activity.my',
+            'posts.view',
+            'posts.view-own',
+            'posts.create',
+            'posts.update-own',
+            'posts.delete-own',
         ])->get();
         $user->syncPermissions($userPerms);
     }

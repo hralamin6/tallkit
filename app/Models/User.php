@@ -181,6 +181,14 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
     }
 
     /**
+     * Get the user's posts.
+     */
+    public function posts()
+    {
+        return $this->hasMany(Post::class);
+    }
+
+    /**
      * Get conversations where user is participant one.
      */
     public function conversationsAsUserOne()

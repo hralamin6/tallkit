@@ -60,7 +60,8 @@
               <x-menu-item :title="__('Backups')" icon="o-cloud" :link="route('app.backups')" route="app.backups"/>
               <x-menu-item :title="__('Translations')" icon="o-language" :link="route('app.translate')" route="app.translate"/>
               <x-menu-item :title="__('Pages')" icon="o-document-text" :link="route('app.pages')" route="app.pages"/>
-
+              <x-menu-item :title="__('Categories')" icon="o-tag" :link="route('app.categories')" route="app.categories"/>
+              <x-menu-item :title="__('Posts')" icon="o-document-text" :link="route('app.posts')" route="app.posts"/>
 
               @can('activity.feed')
                 <x-menu-item :title="__('Activity Feed')" icon="o-list-bullet" :link="route('app.activity.feed')" route="app.activity.feed"/>
