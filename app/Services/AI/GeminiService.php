@@ -22,10 +22,11 @@ class GeminiService implements AiServiceInterface
         $model = $options['model'] ?? $this->defaultModel;
         $temperature = $options['temperature'] ?? 0.7;
         $maxTokens = $options['max_tokens'] ?? 2000;
+        $images = $options['images'] ?? [];
 
         try {
             // Convert OpenAI format to Gemini format
-            $contents = $this->convertMessagesToGeminiFormat($messages);
+            $contents = $this->convertMessagesToGeminiFormat($messages, $images);
 
             $url = $this->baseUrl . "/models/{$model}:generateContent";
 
@@ -138,43 +139,19 @@ class GeminiService implements AiServiceInterface
 
 return [
   // 🌟 GEMINI 2.5 SERIES — Free Tier Models
-  'gemini-2.5-pro' => 'Gemini 2.5 Pro (Free Tier)',
-  'gemini-2.5-flash' => 'Gemini 2.5 Flash (Free Tier)',
-  'gemini-2.5-flash-preview-09-2025' => 'Gemini 2.5 Flash Preview (Free Tier)',
-  'gemini-2.5-flash-lite' => 'Gemini 2.5 Flash-Lite (Free Tier)',
-  'gemini-2.5-flash-lite-preview-09-2025' => 'Gemini 2.5 Flash-Lite Preview (Free Tier)',
-  'gemini-2.5-flash-native-audio-preview-09-2025' => 'Gemini 2.5 Flash Native Audio (Live API) (Free Tier)',
-  'gemini-2.5-flash-image' => 'Gemini 2.5 Flash Image (Free Tier)',
-  'gemini-2.5-flash-preview-tts' => 'Gemini 2.5 Flash Preview TTS (Free Tier)',
-  'gemini-2.5-pro-preview-tts' => 'Gemini 2.5 Pro Preview TTS (Free Tier)',
-  'gemini-2.5-computer-use-preview-10-2025' => 'Gemini 2.5 Computer Use Preview (Free Tier)',
+'gemini-2.5-flash' => 'Gemini 2.5 Flash (img) (20 rpd)',
+'gemini-2.5-flash-lite' => 'Gemini 2.5 Flash Lite (img) (20 rpd)',
+'gemini-2.5-flash-tts' => 'Gemini 2.5 Flash TTS (10 rpd)',
+'gemini-3-flash' => 'Gemini 3 Flash (img) (20 rpd)',
+'gemini-robotics-er-1.5-preview' => 'Gemini Robotics ER 1.5 Preview (img) (20 rpd)',
+'gemma-3-1b' => 'Gemma 3 1B (14400 rpd)',
+'gemma-3-2b' => 'Gemma 3 2B (14400 rpd)',
+'gemma-3-4b' => 'Gemma 3 4B (14400 rpd)',
+'gemma-3-12b' => 'Gemma 3 12B (14400 rpd)',
+'gemma-3-27b' => 'Gemma 3 27B (14400 rpd)',
+'gemini-embedding-1' => 'Gemini Embedding 1 (1000 rpd)',
+'gemini-2.5-flash-native-audio-dialog' => 'Gemini 2.5 Flash Native Audio Dialog (Unlimited rpd)',
 
-  // ⚡ GEMINI 2.0 SERIES — Free Tier Models
-  'gemini-2.0-flash' => 'Gemini 2.0 Flash (Free Tier)',
-  'gemini-2.0-flash-lite' => 'Gemini 2.0 Flash-Lite (Free Tier)',
-
-  // 🧠 ROBOTICS
-  'gemini-robotics-er-1.5-preview' => 'Gemini Robotics-ER 1.5 Preview (Free Tier)',
-
-  // 🖼️ IMAGEN MODELS (Image Generation)
-  'imagen-4.0-generate-001' => 'Imagen 4 (Free Tier)',
-  'imagen-4.0-fast-generate-001' => 'Imagen 4 Fast (Free Tier)',
-  'imagen-4.0-ultra-generate-001' => 'Imagen 4 Ultra (Free Tier)',
-  'imagen-3.0-generate-002' => 'Imagen 3 (Free Tier)',
-
-  // 🎬 VEO MODELS (Video Generation)
-  'veo-3.1-generate-preview' => 'Veo 3.1 (Free Tier)',
-  'veo-3.1-fast-generate-preview' => 'Veo 3.1 Fast (Free Tier)',
-  'veo-3.0-generate-001' => 'Veo 3 (Free Tier)',
-  'veo-3.0-fast-generate-001' => 'Veo 3 Fast (Free Tier)',
-  'veo-2.0-generate-001' => 'Veo 2 (Free Tier)',
-
-  // 🔍 EMBEDDING MODEL
-  'gemini-embedding-001' => 'Gemini Embedding (Free Tier)',
-
-  // 💡 GEMMA SERIES (Open Models)
-  'gemma-3' => 'Gemma 3 (Free Tier)',
-  'gemma-3n' => 'Gemma 3n (Free Tier)',
 ];
 
     }
@@ -185,23 +162,57 @@ return [
         return (int) ceil(strlen($text) / 4);
     }
 
-    protected function convertMessagesToGeminiFormat(array $messages): array
+    protected function convertMessagesToGeminiFormat(array $messages, array $images = []): array
     {
         $contents = [];
+        
+        // Find the index of the last user message
+        $lastUserMessageIndex = null;
+        foreach ($messages as $index => $message) {
+            if ($message['role'] === 'user') {
+                $lastUserMessageIndex = $index;
+            }
+        }
 
-        foreach ($messages as $message) {
+        foreach ($messages as $index => $message) {
             $role = $message['role'] === 'assistant' ? 'model' : 'user';
 
-            // Skip system messages or prepend to first user message
+            // Skip system messages
             if ($message['role'] === 'system') {
                 continue;
             }
 
+            $parts = [
+                ['text' => $message['content']],
+            ];
+
+            // Add images to the last user message only
+            if ($message['role'] === 'user' && !empty($images) && $index === $lastUserMessageIndex) {
+                \Log::info('Adding images to Gemini message', [
+                    'image_count' => count($images),
+                    'message_index' => $index,
+                    'last_user_index' => $lastUserMessageIndex,
+                ]);
+                
+                foreach ($images as $imageInfo) {
+                    // Images are now pre-encoded with data and mime_type
+                    $parts[] = [
+                        'inlineData' => [
+                            'mimeType' => $imageInfo['mime_type'],
+                            'data' => $imageInfo['data'],
+                        ],
+                    ];
+                    
+                    \Log::info('Image added to parts', [
+                        'mime' => $imageInfo['mime_type'],
+                        'data_length' => strlen($imageInfo['data']),
+                    ]);
+                }
+            }
+
             $contents[] = [
                 'role' => $role,
-                'parts' => [
-                    ['text' => $message['content']],
-                ],
+                'parts' => $parts,
             ];
         }
 

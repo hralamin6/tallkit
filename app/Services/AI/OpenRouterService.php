@@ -10,7 +10,7 @@ class OpenRouterService implements AiServiceInterface
 {
     protected string $apiKey;
     protected string $baseUrl = 'https://openrouter.ai/api/v1';
-    protected string $defaultModel = 'minimax/minimax-m2:free';
+    protected string $defaultModel = 'sourceful/riverflow-v2-fast';
 
     public function __construct()
     {
@@ -133,50 +133,54 @@ class OpenRouterService implements AiServiceInterface
 
 
       return [
-        'minimax/minimax-m2:free' => 'MiniMax: MiniMax M2 (free)',
-        'tngtech/deepseek-r1t2-chimera:free' => 'TNG: DeepSeek R1T2 Chimera (free)',
-        'z-ai/glm-4.5-air:free' => 'Z.AI: GLM 4.5 Air (free)',
-        'tngtech/deepseek-r1t-chimera:free' => 'TNG: DeepSeek R1T Chimera (free)',
-        'deepseek/deepseek-chat-v3-0324:free' => 'DeepSeek: DeepSeek V3 0324 (free)',
-        'deepseek/deepseek-r1-0528:free' => 'DeepSeek: R1 0528 (free)',
-        'qwen/qwen3-235b-a22b:free' => 'Qwen: Qwen3 235B A22B (free)',
-        'qwen/qwen3-coder:free' => 'Qwen: Qwen3 Coder 480B A35B (free)',
-        'meta-llama/llama-3.3-70b-instruct:free' => 'Meta: Llama 3.3 70B Instruct (free)',
-        'meituan/longcat-flash-chat:free' => 'Meituan: LongCat Flash Chat (free)',
-        'deepseek/deepseek-r1:free' => 'DeepSeek: R1 (free)',
-        'microsoft/mai-ds-r1:free' => 'Microsoft: MAI DS R1 (free)',
-        'openai/gpt-oss-20b:free' => 'OpenAI: gpt-oss-20b (free)',
-        'nvidia/nemotron-nano-12b-v2-vl:free' => 'NVIDIA: Nemotron Nano 12B 2 VL (free)',
-        'google/gemma-3-27b-it:free' => 'Google: Gemma 3 27B (free)',
-        'deepseek/deepseek-r1-distill-llama-70b:free' => 'DeepSeek: R1 Distill Llama 70B (free)',
-        'meta-llama/llama-4-maverick:free' => 'Meta: Llama 4 Maverick (free)',
-        'deepseek/deepseek-chat-v3.1:free' => 'DeepSeek: DeepSeek V3.1 (free)',
-        'cognitivecomputations/dolphin-mistral-24b-venice-edition:free' => 'Venice: Uncensored (free)',
-        'deepseek/deepseek-r1-0528-qwen3-8b:free' => 'DeepSeek: R1 0528 Qwen3 8B (free)',
-        'mistralai/mistral-nemo:free' => 'Mistral: Mistral Nemo (free)',
-        'alibaba/tongyi-deepresearch-30b-a3b:free' => 'Tongyi DeepResearch 30B A3B (free)',
-        'mistralai/mistral-small-3.2-24b-instruct:free' => 'Mistral: Mistral Small 3.2 24B (free)',
-        'mistralai/mistral-small-3.1-24b-instruct:free' => 'Mistral: Mistral Small 3.1 24B (free)',
-        'qwen/qwen3-14b:free' => 'Qwen: Qwen3 14B (free)',
-        'qwen/qwen3-30b-a3b:free' => 'Qwen: Qwen3 30B A3B (free)',
-        'nousresearch/hermes-3-llama-3.1-405b:free' => 'Nous: Hermes 3 405B Instruct (free)',
-        'mistralai/mistral-7b-instruct:free' => 'Mistral: Mistral 7B Instruct (free)',
-        'nvidia/nemotron-nano-9b-v2:free' => 'NVIDIA: Nemotron Nano 9B V2 (free)',
-        'meta-llama/llama-3.3-8b-instruct:free' => 'Meta: Llama 3.3 8B Instruct (free)',
-        'meta-llama/llama-4-scout:free' => 'Meta: Llama 4 Scout (free)',
-        'qwen/qwen2.5-vl-32b-instruct:free' => 'Qwen: Qwen2.5 VL 32B Instruct (free)',
-        'qwen/qwen-2.5-coder-32b-instruct:free' => 'Qwen2.5 Coder 32B Instruct (free)',
-        'qwen/qwen-2.5-72b-instruct:free' => 'Qwen2.5 72B Instruct (free)',
-        'moonshotai/kimi-k2:free' => 'MoonshotAI: Kimi K2 0711 (free)',
-        'mistralai/mistral-small-24b-instruct-2501:free' => 'Mistral: Mistral Small 3 (free)',
-        'qwen/qwen3-4b:free' => 'Qwen: Qwen3 4B (free)',
-        'meta-llama/llama-3.2-3b-instruct:free' => 'Meta: Llama 3.2 3B Instruct (free)',
-        'google/gemma-3-4b-it:free' => 'Google: Gemma 3 4B (free)',
-        'arliai/qwq-32b-arliai-rpr-v1:free' => 'ArliAI: QwQ 32B RpR v1 (free)',
-        'google/gemma-3n-e2b-it:free' => 'Google: Gemma 3n 2B (free)',
-        'google/gemma-3-12b-it:free' => 'Google: Gemma 3 12B (free)',
-        'google/gemma-3n-e4b-it:free' => 'Google: Gemma 3n 4B (free)',
-        'agentica-org/deepcoder-14b-preview:free' => 'Agentica: Deepcoder 14B Preview (free)',
+       'openrouter/pony-alpha' => 'Pony Alpha',
+'sourceful/riverflow-v2-pro' => 'Sourceful: Riverflow V2 Pro',
+'sourceful/riverflow-v2-fast' => 'Sourceful: Riverflow V2 Fast',
+
+'stepfun/step-3.5-flash:free' => 'StepFun: Step 3.5 Flash (free)',
+'arcee-ai/trinity-large-preview:free' => 'Arcee AI: Trinity Large Preview (free)',
+'upstage/solar-pro-3:free' => 'Upstage: Solar Pro 3 (free)',
+
+'liquid/lfm-2.5-1.2b-thinking:free' => 'LiquidAI: LFM2.5-1.2B-Thinking (free)',
+'liquid/lfm-2.5-1.2b-instruct:free' => 'LiquidAI: LFM2.5-1.2B-Instruct (free)',
+
+'black-forest-labs/flux.2-klein-4b' => 'Black Forest Labs: FLUX.2 Klein 4B',
+'bytedance-seed/seedream-4.5' => 'ByteDance Seed: Seedream 4.5',
+'black-forest-labs/flux.2-max' => 'Black Forest Labs: FLUX.2 Max',
+
+'nvidia/nemotron-3-nano-30b-a3b:free' => 'NVIDIA: Nemotron 3 Nano 30B A3B (free)',
+
+'sourceful/riverflow-v2-max-preview' => 'Sourceful: Riverflow V2 Max Preview',
+'sourceful/riverflow-v2-standard-preview' => 'Sourceful: Riverflow V2 Standard Preview',
+'sourceful/riverflow-v2-fast-preview' => 'Sourceful: Riverflow V2 Fast Preview',
+
+'arcee-ai/trinity-mini:free' => 'Arcee AI: Trinity Mini (free)',
+'tngtech/r1t-chimera:free' => 'TNG: R1T Chimera (free)',
+
+'black-forest-labs/flux.2-flex' => 'Black Forest Labs: FLUX.2 Flex',
+'black-forest-labs/flux.2-pro' => 'Black Forest Labs: FLUX.2 Pro',
+
+'nvidia/nemotron-nano-12b-2-vl:free' => 'NVIDIA: Nemotron Nano 12B 2 VL (free)',
+'qwen/qwen3-next-80b-a3b-instruct:free' => 'Qwen: Qwen3 Next 80B A3B Instruct (free)',
+'nvidia/nemotron-nano-9b-v2:free' => 'NVIDIA: Nemotron Nano 9B V2 (free)',
+
+'openai/gpt-oss-120b:free' => 'OpenAI: gpt-oss-120b (free)',
+'openai/gpt-oss-20b:free' => 'OpenAI: gpt-oss-20b (free)',
+
+'z-ai/glm-4.5-air:free' => 'Z.AI: GLM 4.5 Air (free)',
+'qwen/qwen3-coder-480b-a35b:free' => 'Qwen: Qwen3 Coder 480B A35B (free)',
+'venice/uncensored:free' => 'Venice: Uncensored (free)',
+
+'google/gemma-3n-2b:free' => 'Google: Gemma 3n 2B (free)',
+'tngtech/deepseek-r1t2-chimera:free' => 'TNG: DeepSeek R1T2 Chimera (free)',
+'deepseek/r1-0528:free' => 'DeepSeek: R1 0528 (free)',
+'google/gemma-3n-4b:free' => 'Google: Gemma 3n 4B (free)',
+
+'qwen/qwen3-4b:free' => 'Qwen: Qwen3 4B (free)',
+'tngtech/deepseek-r1t-chimera:free' => 'TNG: DeepSeek R1T Chimera (free)',
+'mistralai/mistral-small-3.1-24b:free' => 'Mistral: Mistral Small 3.1 24B (free)',
+
+'google/gemma-3-4b:free' => 'Google: Gemma 3 4B (free)',
 
       ];
 

@@ -35,9 +35,9 @@ class extends Component
     // ==========================================
     // AI SETTINGS
     // ==========================================
-    public string $aiProvider = 'openrouter';
-    public string $model = 'minimax/minimax-m2:free';
-    public string $systemPrompt = 'You are a helpful AI assistant.';
+    public string $aiProvider='cerebras';
+    public string $model='gpt-oss-120b';
+    public string $systemPrompt = 'You are a helpful AI assistant. Do not create table. always try to write in bangla if not specified.';
     public float $temperature = 0.7;
     public int $maxTokens = 2000;
 
@@ -48,6 +48,7 @@ class extends Component
     public bool $showSettingsModal = false;
     public bool $showImageGeneratorModal = false;
     public string $imagePrompt = '';
+    public string $imageModel = 'flux';
     public bool $generatingImage = false;
 
     // ==========================================
@@ -226,9 +227,22 @@ class extends Component
                 'tokens' => $this->countTokens($this->message),
             ]);
 
-            // Handle attachments
+            // Handle attachments and collect image data BEFORE Livewire cleanup
+            $imageData = [];
             if (!empty($this->attachments)) {
                 foreach ($this->attachments as $attachment) {
+                    // Check if it's an image and encode it immediately
+                    if (str_starts_with($attachment->getMimeType(), 'image/')) {
+                        $tempPath = $attachment->getRealPath();
+                        if (file_exists($tempPath)) {
+                            $imageData[] = [
+                                'data' => base64_encode(file_get_contents($tempPath)),
+                                'mime_type' => $attachment->getMimeType(),
+                            ];
+                        }
+                    }
+                    
+                    // Then save to media library
                     $userMessage->addMedia($attachment->getRealPath())
                         ->usingFileName($attachment->getClientOriginalName())
                         ->toMediaCollection('attachments');
@@ -241,11 +255,20 @@ class extends Component
             // Get AI service
             $aiService = AiServiceFactory::make($conversation->ai_provider);
 
+            // Debug: Log image data
+            if (!empty($imageData)) {
+                \Log::info('Sending images to AI', [
+                    'count' => count($imageData),
+                    'provider' => $conversation->ai_provider,
+                ]);
+            }
+
             // Get AI response
             $response = $aiService->chat($messages, [
                 'model' => $conversation->model,
                 'temperature' => $this->temperature,
                 'max_tokens' => $this->maxTokens,
+                'images' => $imageData, // Pass encoded image data
             ]);
 
 
@@ -434,7 +457,7 @@ class extends Component
             $imagePath = $aiService->generateImage($this->imagePrompt, [
                 'width' => 1024,
                 'height' => 1024,
-                'model' => 'flux',
+                'model' => $this->imageModel,
             ]);
 
             // Create a message with the generated image
@@ -458,6 +481,7 @@ class extends Component
             $this->success('Image generated successfully!');
             $this->showImageGeneratorModal = false;
             $this->imagePrompt = '';
+            $this->imageModel = 'flux';
             $this->dispatch('image-generated');
 
         } catch (\Exception $e) {
@@ -562,10 +586,13 @@ class extends Component
     protected function getDefaultModel(): string
     {
         return match ($this->aiProvider) {
-            'openrouter' => 'openai/gpt-3.5-turbo',
-            'gemini' => 'gemini-pro',
-            'pollinations' => 'pollinations-text',
-            default => 'openai/gpt-3.5-turbo',
+            'openrouter' => 'sourceful/riverflow-v2-fast',
+            'gemini' => 'gemini-2.5-flash',
+            'pollinations' => 'nova-micro',
+            'cerebras' => 'gpt-oss-120b',
+            'mistral' => 'mistral-large-2411',
+            'groq' => 'llama-3.3-70b-versatile',
+            default => 'gpt-oss-120b',
         };
     }
 
@@ -574,6 +601,19 @@ class extends Component
         try {
             $service = AiServiceFactory::make($this->aiProvider);
             return $service->getAvailableModels();
+        } catch (\Exception $e) {
+            return [];
+        }
+    }
+
+    public function getImageModels(): array
+    {
+        try {
+            $service = AiServiceFactory::make('pollinations');
+            if (method_exists($service, 'getImageModels')) {
+                return $service->getImageModels();
+            }
+            return [];
         } catch (\Exception $e) {
             return [];
         }

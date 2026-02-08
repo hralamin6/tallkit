@@ -6,15 +6,15 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use League\CommonMark\CommonMarkConverter;
 
-class PollinationsService implements AiServiceInterface
+class MistralService implements AiServiceInterface
 {
     protected string $apiKey;
-    protected string $baseUrl = 'https://gen.pollinations.ai';
-    protected string $defaultModel = 'nova-micro';
+    protected string $baseUrl = 'https://api.mistral.ai/v1';
+    protected string $defaultModel = 'mistral-large-2411';
 
     public function __construct()
     {
-        $this->apiKey = config('services.pollinations.api_key');
+        $this->apiKey = config('services.mistral.api_key');
     }
 
     public function chat(array $messages, array $options = []): array
@@ -24,8 +24,8 @@ class PollinationsService implements AiServiceInterface
         $maxTokens = $options['max_tokens'] ?? 2000;
         $images = $options['images'] ?? [];
 
-        // Add images to messages if provided
-        if (!empty($images)) {
+        // Add images to messages if Pixtral model
+        if (!empty($images) && str_contains($model, 'pixtral')) {
             $messages = $this->addImagesToMessages($messages, $images);
         }
 
@@ -34,9 +34,9 @@ class PollinationsService implements AiServiceInterface
                 'Authorization' => 'Bearer ' . $this->apiKey,
                 'Content-Type' => 'application/json',
             ])
-            ->timeout(120)
-            ->connectTimeout(30)
-            ->post($this->baseUrl . '/v1/chat/completions', [
+            ->timeout(120) // 2 minutes timeout
+            ->connectTimeout(30) // 30 seconds connection timeout
+            ->post($this->baseUrl . '/chat/completions', [
                 'model' => $model,
                 'messages' => $messages,
                 'temperature' => $temperature,
@@ -47,7 +47,7 @@ class PollinationsService implements AiServiceInterface
                 $errorBody = $response->json();
                 $errorMessage = $errorBody['error']['message'] ?? $errorBody['message'] ?? $response->body();
 
-                Log::error('Pollinations API Error', [
+                Log::error('Mistral API Error', [
                     'status' => $response->status(),
                     'body' => $response->body(),
                     'error' => $errorMessage,
@@ -73,7 +73,7 @@ class PollinationsService implements AiServiceInterface
                 'model' => $data['model'] ?? $model,
             ];
         } catch (\Exception $e) {
-            Log::error('Pollinations Service Error', ['error' => $e->getMessage()]);
+            Log::error('Mistral Service Error', ['error' => $e->getMessage()]);
             throw $e;
         }
     }
@@ -88,7 +88,7 @@ class PollinationsService implements AiServiceInterface
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $this->apiKey,
                 'Content-Type' => 'application/json',
-            ])->timeout(120)->post($this->baseUrl . '/v1/chat/completions', [
+            ])->timeout(120)->post($this->baseUrl . '/chat/completions', [
                 'model' => $model,
                 'messages' => $messages,
                 'temperature' => $temperature,
@@ -123,85 +123,42 @@ class PollinationsService implements AiServiceInterface
                 }
             }
         } catch (\Exception $e) {
-            Log::error('Pollinations Stream Error', ['error' => $e->getMessage()]);
+            Log::error('Mistral Stream Error', ['error' => $e->getMessage()]);
             throw $e;
         }
     }
 
     public function generateImage(string $prompt, array $options = []): string
     {
-        try {
-            $width = $options['width'] ?? 1024;
-            $height = $options['height'] ?? 1024;
-            $model = $options['model'] ?? 'flux';
-            $seed = $options['seed'] ?? rand(1, 1000000);
-
-            // Build image URL with new API
-            $imageUrl = $this->baseUrl . '/image/' . urlencode($prompt);
-            $imageUrl .= "?model={$model}&width={$width}&height={$height}&seed={$seed}";
-
-            // Download the image with API key
-            $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->apiKey,
-            ])
-            ->timeout(120)
-            ->connectTimeout(30)
-            ->get($imageUrl);
-
-            if ($response->failed()) {
-                throw new \Exception('Failed to generate image. Please try again.');
-            }
-
-            // Save to temporary file
-            $tempPath = storage_path('app/temp/pollinations_' . uniqid() . '.png');
-            if (!is_dir(dirname($tempPath))) {
-                mkdir(dirname($tempPath), 0755, true);
-            }
-            file_put_contents($tempPath, $response->body());
-
-            return $tempPath;
-        } catch (\Exception $e) {
-            Log::error('Pollinations Image Generation Error', ['error' => $e->getMessage()]);
-            throw $e;
-        }
+        throw new \Exception('Image generation not supported by Mistral. Use Pollinations service.');
     }
 
     public function getAvailableModels(): array
     {
         return [
-            // Text models with vision support (all marked with img)
-            'nova-micro' => 'Amazon Nova Micro (img) (25K pollen)',
-            'qwen-coder' => 'Qwen3 Coder 30B (img) (4.9K pollen)',
-            'gemini-lite' => 'Gemini 2.5 Flash Lite (img) (3.6K pollen)',
-            'mistral' => 'Mistral Small 3.2 24B (img) (2.8K pollen)',
-            'openai-nano' => 'OpenAI GPT-5 Nano (img) (950 pollen)',
-            'openai-mini' => 'OpenAI GPT-5 Mini (img) (700 pollen)',
-            'grok' => 'xAI Grok 4 Fast (img) (700 pollen)',
-            'deepseek' => 'DeepSeek V3.2 (img) (550 pollen)',
-            'perplexity-fast' => 'Perplexity Sonar (img) (500 pollen)',
-            'gemini' => 'Gemini 3 Flash (img) (300 pollen)',
-            'minimax' => 'MiniMax M2.1 (img) (300 pollen)',
-            'perplexity-reasoning' => 'Perplexity Sonar Reasoning (img) (200 pollen)',
-            'openai-audio' => 'OpenAI GPT-4o Mini Audio (img) (150 pollen)',
-            'chickytutor' => 'ChickyTutor AI Tutor (img) (150 pollen)',
-            'openai' => 'OpenAI GPT-5.2 (img) (100 pollen)',
-            'glm' => 'Z.ai GLM-4.7 (img) (90 pollen)',
-            'kimi' => 'Moonshot Kimi K2.5 (img) (85 pollen)',
-            'midijourney' => 'MIDIjourney (img) (80 pollen)',
-            'claude' => 'Anthropic Claude Haiku 4.5 (img) (75 pollen)',
-        ];
-    }
+        'codestral-2405' => 'Codestral 2405 (500000 tpm)',
+'codestral-2501' => 'Codestral 2501 (500000 tpm)',
+'codestral-mamba-2407' => 'Codestral Mamba 2407 (500000 tpm)',
+'ministral-3b-2410' => 'Ministral 3B 2410 (500000 tpm)',
+'ministral-8b-2410' => 'Ministral 8B 2410 (500000 tpm)',
+'mistral-embed' => 'Mistral Embed (20000000 tpm)',
+'mistral-large-2402' => 'Mistral Large 2402 (500000 tpm)',
+'mistral-large-2407' => 'Mistral Large 2407 (500000 tpm)',
+'mistral-large-2411' => 'Mistral Large 2411 (500000 tpm)',
+'mistral-medium' => 'Mistral Medium (500000 tpm)',
+'mistral-moderation-2411' => 'Mistral Moderation 2411 (500000 tpm)',
+'mistral-saba-2502' => 'Mistral Saba 2502 (500000 tpm)',
+'mistral-small-2402' => 'Mistral Small 2402 (500000 tpm)',
+'mistral-small-2409' => 'Mistral Small 2409 (500000 tpm)',
+'mistral-small-2501' => 'Mistral Small 2501 (500000 tpm)',
+'mistral-small-2503' => 'Mistral Small 2503 (500000 tpm)',
+'open-mistral-7b' => 'Open Mistral 7B (500000 tpm)',
+'open-mistral-nemo' => 'Open Mistral Nemo (500000 tpm)',
+'open-mixtral-8x22b' => 'Open Mixtral 8x22B (500000 tpm)',
+'open-mixtral-8x7b' => 'Open Mixtral 8x7B (500000 tpm)',
+'pixtral-12b-2409' => 'Pixtral 12B 2409 (img) (500000 tpm)',
+'pixtral-large-2411' => 'Pixtral Large 2411 (img) (500000 tpm)',
 
-    public function getImageModels(): array
-    {
-        return [
-            'flux' => 'Flux Schnell (5K pollen)',
-            'zimage' => 'Z-Image Turbo (5K pollen)',
-            'imagen-4' => 'Imagen 4 (200 pollen)',
-            'flux-2-dev' => 'FLUX.2 Dev (200 pollen)',
-            'klein' => 'FLUX.2 Klein 4B (150 pollen)',
-            'klein-large' => 'FLUX.2 Klein 9B (85 pollen)',
-            'gptimage' => 'GPT Image 1 Mini',
         ];
     }
 

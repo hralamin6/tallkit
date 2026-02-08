@@ -6,15 +6,15 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use League\CommonMark\CommonMarkConverter;
 
-class PollinationsService implements AiServiceInterface
+class GroqService implements AiServiceInterface
 {
     protected string $apiKey;
-    protected string $baseUrl = 'https://gen.pollinations.ai';
-    protected string $defaultModel = 'nova-micro';
+    protected string $baseUrl = 'https://api.groq.com/openai/v1';
+    protected string $defaultModel = 'llama-3.3-70b-versatile';
 
     public function __construct()
     {
-        $this->apiKey = config('services.pollinations.api_key');
+        $this->apiKey = config('services.groq.api_key');
     }
 
     public function chat(array $messages, array $options = []): array
@@ -24,8 +24,8 @@ class PollinationsService implements AiServiceInterface
         $maxTokens = $options['max_tokens'] ?? 2000;
         $images = $options['images'] ?? [];
 
-        // Add images to messages if provided
-        if (!empty($images)) {
+        // Add images to messages if Llama 4 model
+        if (!empty($images) && str_contains($model, 'llama-4')) {
             $messages = $this->addImagesToMessages($messages, $images);
         }
 
@@ -34,20 +34,20 @@ class PollinationsService implements AiServiceInterface
                 'Authorization' => 'Bearer ' . $this->apiKey,
                 'Content-Type' => 'application/json',
             ])
-            ->timeout(120)
-            ->connectTimeout(30)
-            ->post($this->baseUrl . '/v1/chat/completions', [
+            ->timeout(120) // 2 minutes timeout
+            ->connectTimeout(30) // 30 seconds connection timeout
+            ->post($this->baseUrl . '/chat/completions', [
                 'model' => $model,
                 'messages' => $messages,
                 'temperature' => $temperature,
-                'max_tokens' => $maxTokens,
+                'max_completion_tokens' => $maxTokens,
             ]);
 
             if ($response->failed()) {
                 $errorBody = $response->json();
                 $errorMessage = $errorBody['error']['message'] ?? $errorBody['message'] ?? $response->body();
 
-                Log::error('Pollinations API Error', [
+                Log::error('Groq API Error', [
                     'status' => $response->status(),
                     'body' => $response->body(),
                     'error' => $errorMessage,
@@ -73,7 +73,7 @@ class PollinationsService implements AiServiceInterface
                 'model' => $data['model'] ?? $model,
             ];
         } catch (\Exception $e) {
-            Log::error('Pollinations Service Error', ['error' => $e->getMessage()]);
+            Log::error('Groq Service Error', ['error' => $e->getMessage()]);
             throw $e;
         }
     }
@@ -88,11 +88,11 @@ class PollinationsService implements AiServiceInterface
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $this->apiKey,
                 'Content-Type' => 'application/json',
-            ])->timeout(120)->post($this->baseUrl . '/v1/chat/completions', [
+            ])->timeout(120)->post($this->baseUrl . '/chat/completions', [
                 'model' => $model,
                 'messages' => $messages,
                 'temperature' => $temperature,
-                'max_tokens' => $maxTokens,
+                'max_completion_tokens' => $maxTokens,
                 'stream' => true,
             ]);
 
@@ -123,85 +123,41 @@ class PollinationsService implements AiServiceInterface
                 }
             }
         } catch (\Exception $e) {
-            Log::error('Pollinations Stream Error', ['error' => $e->getMessage()]);
+            Log::error('Groq Stream Error', ['error' => $e->getMessage()]);
             throw $e;
         }
     }
 
     public function generateImage(string $prompt, array $options = []): string
     {
-        try {
-            $width = $options['width'] ?? 1024;
-            $height = $options['height'] ?? 1024;
-            $model = $options['model'] ?? 'flux';
-            $seed = $options['seed'] ?? rand(1, 1000000);
-
-            // Build image URL with new API
-            $imageUrl = $this->baseUrl . '/image/' . urlencode($prompt);
-            $imageUrl .= "?model={$model}&width={$width}&height={$height}&seed={$seed}";
-
-            // Download the image with API key
-            $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->apiKey,
-            ])
-            ->timeout(120)
-            ->connectTimeout(30)
-            ->get($imageUrl);
-
-            if ($response->failed()) {
-                throw new \Exception('Failed to generate image. Please try again.');
-            }
-
-            // Save to temporary file
-            $tempPath = storage_path('app/temp/pollinations_' . uniqid() . '.png');
-            if (!is_dir(dirname($tempPath))) {
-                mkdir(dirname($tempPath), 0755, true);
-            }
-            file_put_contents($tempPath, $response->body());
-
-            return $tempPath;
-        } catch (\Exception $e) {
-            Log::error('Pollinations Image Generation Error', ['error' => $e->getMessage()]);
-            throw $e;
-        }
+        throw new \Exception('Image generation not supported by Groq. Use Pollinations service.');
     }
 
     public function getAvailableModels(): array
     {
         return [
-            // Text models with vision support (all marked with img)
-            'nova-micro' => 'Amazon Nova Micro (img) (25K pollen)',
-            'qwen-coder' => 'Qwen3 Coder 30B (img) (4.9K pollen)',
-            'gemini-lite' => 'Gemini 2.5 Flash Lite (img) (3.6K pollen)',
-            'mistral' => 'Mistral Small 3.2 24B (img) (2.8K pollen)',
-            'openai-nano' => 'OpenAI GPT-5 Nano (img) (950 pollen)',
-            'openai-mini' => 'OpenAI GPT-5 Mini (img) (700 pollen)',
-            'grok' => 'xAI Grok 4 Fast (img) (700 pollen)',
-            'deepseek' => 'DeepSeek V3.2 (img) (550 pollen)',
-            'perplexity-fast' => 'Perplexity Sonar (img) (500 pollen)',
-            'gemini' => 'Gemini 3 Flash (img) (300 pollen)',
-            'minimax' => 'MiniMax M2.1 (img) (300 pollen)',
-            'perplexity-reasoning' => 'Perplexity Sonar Reasoning (img) (200 pollen)',
-            'openai-audio' => 'OpenAI GPT-4o Mini Audio (img) (150 pollen)',
-            'chickytutor' => 'ChickyTutor AI Tutor (img) (150 pollen)',
-            'openai' => 'OpenAI GPT-5.2 (img) (100 pollen)',
-            'glm' => 'Z.ai GLM-4.7 (img) (90 pollen)',
-            'kimi' => 'Moonshot Kimi K2.5 (img) (85 pollen)',
-            'midijourney' => 'MIDIjourney (img) (80 pollen)',
-            'claude' => 'Anthropic Claude Haiku 4.5 (img) (75 pollen)',
-        ];
-    }
+            // Featured Systems
+            'allam-2-7b' => 'Allam 2 7B (7000 rpd)',
+'canopylabs/orpheus-arabic-saudi' => 'Orpheus Arabic Saudi (100 rpd)',
+'canopylabs/orpheus-v1-english' => 'Orpheus v1 English (100 rpd)',
+'groq/compound' => 'Groq Compound - AI System with Tools (250 rpd)',
+'groq/compound-mini' => 'Groq Compound Mini (250 rpd)',
+'llama-3.1-8b-instant' => 'LLaMA 3.1 8B Instant (14400 rpd)',
+'llama-3.3-70b-versatile' => 'LLaMA 3.3 70B Versatile (1000 rpd)',
+'meta-llama/llama-4-maverick-17b-128e-instruct' => 'LLaMA 4 Maverick 17B 128e Instruct (img) (1000 rpd)',
+'meta-llama/llama-4-scout-17b-16e-instruct' => 'LLaMA 4 Scout 17B 16e Instruct (img) (1000 rpd)',
+'meta-llama/llama-guard-4-12b' => 'LLaMA Guard 4 12B (14400 rpd)',
+'meta-llama/llama-prompt-guard-2-22m' => 'LLaMA Prompt Guard 2 22M (14400 rpd)',
+'meta-llama/llama-prompt-guard-2-86m' => 'LLaMA Prompt Guard 2 86M (14400 rpd)',
+'moonshotai/kimi-k2-instruct' => 'Kimi K2 Instruct (1000 rpd)',
+'moonshotai/kimi-k2-instruct-0905' => 'Kimi K2 Instruct 0905 (1000 rpd)',
+'openai/gpt-oss-120b' => 'GPT OSS 120B (1000 rpd)',
+'openai/gpt-oss-20b' => 'GPT OSS 20B (1000 rpd)',
+'openai/gpt-oss-safeguard-20b' => 'GPT OSS Safeguard 20B (1000 rpd)',
+'qwen/qwen3-32b' => 'Qwen3 32B (1000 rpd)',
+'whisper-large-v3' => 'Whisper Large v3 (2000 rpd)',
+'whisper-large-v3-turbo' => 'Whisper Large v3 Turbo (2000 rpd)',
 
-    public function getImageModels(): array
-    {
-        return [
-            'flux' => 'Flux Schnell (5K pollen)',
-            'zimage' => 'Z-Image Turbo (5K pollen)',
-            'imagen-4' => 'Imagen 4 (200 pollen)',
-            'flux-2-dev' => 'FLUX.2 Dev (200 pollen)',
-            'klein' => 'FLUX.2 Klein 4B (150 pollen)',
-            'klein-large' => 'FLUX.2 Klein 9B (85 pollen)',
-            'gptimage' => 'GPT Image 1 Mini',
         ];
     }
 

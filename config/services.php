@@ -72,8 +72,22 @@ return [
     ],
 
     'pollinations' => [
-        'api_token' => env('POLLINATIONS_API_TOKEN', ''),
-        'openai_url' => env('POLLINATIONS_OPENAI_URL', 'https://text.pollinations.ai/openai'),
+        'api_key' => env('POLLINATIONS_API_KEY', ''),
+    ],
+
+    'cerebras' => [
+        'api_key' => env('CEREBRAS_API_KEY', ''),
+        'base_url' => env('CEREBRAS_BASE_URL', 'https://api.cerebras.ai/v1'),
+    ],
+
+    'mistral' => [
+        'api_key' => env('MISTRAL_API_KEY', ''),
+        'base_url' => env('MISTRAL_BASE_URL', 'https://api.mistral.ai/v1'),
+    ],
+
+    'groq' => [
+        'api_key' => env('GROQ_API_KEY', ''),
+        'base_url' => env('GROQ_BASE_URL', 'https://api.groq.com/openai/v1'),
     ],
 
 ];

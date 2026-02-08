@@ -37,7 +37,7 @@
                                 Model
                             </label>
                             <select 
-                                wire:model="model"
+                                wire:model.live="model"
                                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500"
                             >
                                 @foreach($this->getAvailableModels() as $key => $label)
@@ -135,6 +135,25 @@
                     </div>
 
                     <form wire:submit="generateImage" class="space-y-4">
+                        {{-- Model Selection --}}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Image Model
+                            </label>
+                            <select 
+                                wire:model="imageModel"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-purple-500"
+                            >
+                                @foreach($this->getImageModels() as $modelId => $modelName)
+                                    <option value="{{ $modelId }}">{{ $modelName }}</option>
+                                @endforeach
+                            </select>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                💡 Flux Schnell and Z-Image Turbo offer best value (5K pollen)
+                            </p>
+                        </div>
+
+                        {{-- Image Prompt --}}
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Image Prompt

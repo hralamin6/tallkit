@@ -10,6 +10,9 @@ class AiServiceFactory
             'openrouter' => new OpenRouterService(),
             'gemini' => new GeminiService(),
             'pollinations' => new PollinationsService(),
+            'cerebras' => new CerebrasService(),
+            'mistral' => new MistralService(),
+            'groq' => new GroqService(),
             default => throw new \InvalidArgumentException("Unsupported AI provider: {$provider}"),
         };
     }
@@ -20,6 +23,9 @@ class AiServiceFactory
             'openrouter' => 'OpenRouter',
             'gemini' => 'Google Gemini',
             'pollinations' => 'Pollinations AI',
+            'cerebras' => 'Cerebras AI',
+            'mistral' => 'Mistral AI',
+            'groq' => 'Groq',
         ];
     }
 }
