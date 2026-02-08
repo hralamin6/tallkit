@@ -2,7 +2,7 @@
 
 
 use App\Models\Setting as SettingModel;
-use EragLaravelPwa\Core\PWA;
+use EragLaravelPwa\Facades\PWA;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -363,45 +363,60 @@ class extends Component
             'iconImageUrl' => ['nullable', 'url'],
         ]);
 
-        if ($this->logoImage) {
-            $path = $this->logoImage->store('brand', 'public');
-            $this->logo_url = Storage::url($path);
-        } elseif (!empty($this->logoImageUrl)) {
-            $this->logo_url = $this->logoImageUrl;
-        }
 
-        if ($this->iconImage) {
-            $path = $this->iconImage->store('brand', 'public');
-            $this->icon_url = Storage::url($path);
-        } elseif (!empty($this->iconImageUrl)) {
-            $this->icon_url = $this->iconImageUrl;
-        }
-
-        $logo = SettingModel::set('branding.logo_url', $this->logo_url);
-        $icon = SettingModel::set('branding.icon_url', $this->icon_url);
+        $logo = SettingModel::set('logoImage', 'logo_url');
+        $icon = SettingModel::set('iconImage', 'icon_url');
 
         // Handle media uploads if images are present
         if ($this->logoImage) {
-            $media = $logo->addMedia($this->logoImage->getRealPath())
-                ->usingFileName($logo->key . '.' . $this->logoImage->getClientOriginalExtension())
+            $extension = pathinfo(parse_url($this->logoImage, PHP_URL_PATH), PATHINFO_EXTENSION) ?: 'jpg';
+            $logo->clearMediaCollection('logo');
+            $logo->addMedia($this->logoImage->getRealPath())
+                ->usingFileName($logo->key . now()->timestamp .'.' . $extension)
                 ->toMediaCollection('logo');
-            $path = storage_path("app/public/" . $media->id . '/' . $media->file_name);
-            if (file_exists($path)) {
-                unlink($path);
+        }elseif($this->logoImageUrl){
+            if(checkImageUrl($this->logoImageUrl)){
+                
+$extension = pathinfo(parse_url($this->logoImageUrl, PHP_URL_PATH), PATHINFO_EXTENSION) ?: 'jpg';
+                $icon->clearMediaCollection('logo');
+
+                $logo->addMediaFromUrl($this->logoImageUrl)
+                    ->usingFileName($logo->key . now()->timestamp . '.' . $extension)
+                    ->toMediaCollection('logo');
+            }else{
+                        $this->error('Invalid image url.', position: 'toast-bottom');
             }
+
         }
 
         if ($this->iconImage) {
-            $iconMedia = $icon->addMedia($this->iconImage->getRealPath())
-                ->usingFileName($icon->key . '.' . $this->iconImage->getClientOriginalExtension())
+            $extension = pathinfo(parse_url($this->iconImage, PHP_URL_PATH), PATHINFO_EXTENSION) ?: 'jpg';
+
+            copy($this->iconImage->getRealPath(), public_path('logo.png'));
+            $icon->clearMediaCollection('icon');
+            $icon->addMedia($this->iconImage->getRealPath())
+                ->usingFileName($icon->key . now()->timestamp . '.' . $extension)
                 ->toMediaCollection('icon');
+
+        }elseif($this->iconImageUrl){
+            if(checkImageUrl($this->iconImageUrl)){
+                $extension = pathinfo(parse_url($this->iconImage, PHP_URL_PATH), PATHINFO_EXTENSION) ?: 'jpg';
+                copy($this->iconImageUrl, public_path('logo.png'));
+                $icon->clearMediaCollection('icon');
+                $icon->addMediaFromUrl($this->iconImageUrl)
+                    ->usingFileName($icon->key . now()->timestamp . '.' . $extension)
+                    ->toMediaCollection('icon');
+            }else{
+                        $this->error('Invalid image url.', position: 'toast-bottom');
+                        return;
+            }
         }
 
         // clear file inputs
-        $this->reset(['logoImage', 'iconImage', 'logoImageUrl', 'iconImageUrl']);
 
         // Update PWA manifest with new branding
-        \EragLaravelPwa\Facades\PWA::update([
+        if($this->iconImage || checkImageUrl($this->iconImageUrl)){
+        PWA::update([
             'name' => setting('app.name', 'Laravel PWA'),
             'short_name' => substr(setting('app.name', 'LP'), 0, 12),
             'background_color' => '#6777ef',
@@ -410,12 +425,14 @@ class extends Component
             'theme_color' => '#6777ef',
             'icons' => [
                 [
-                    'src' => $this->icon_url ?: getSettingImage('branding.icon_url', 'icon'),
+                    'src' => getSettingImage('iconImage', 'icon', 'icon'),
                     'sizes' => '512x512',
                     'type' => 'image/png',
                 ],
             ],
         ]);
+        }
+                $this->reset(['logoImage', 'iconImage',  'logoImageUrl', 'iconImageUrl']);
 
         $this->success('Branding images saved.', position: 'toast-bottom');
     }

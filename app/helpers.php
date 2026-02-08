@@ -27,21 +27,22 @@ if (! function_exists('userImage')) {
     }
 }
 if (! function_exists('getSettingImage')) {
-    function getSettingImage($key = 'branding.logo_url', $collection = 'icon', $conversion = 'thumb', $defaultUrl = 'https://placehold.co/400')
+    function getSettingImage($key = '', $collection = '', $conversion = '', $defaultUrl = 'https://placehold.co/400')
     {
-        // Use a static variable to store settings to prevent duplicate queries
-        static $settings = [];
+        // Don't use static cache - always fetch fresh to avoid stale data after uploads
+        $setting = \App\Models\Setting::where('key', $key)->first();
 
-        // Check if the setting is already retrieved in this request
-        if (! array_key_exists($key, $settings)) {
-            $settings[$key] = \App\Models\Setting::where('key', $key)->first();
+        if (!$setting) {
+            return \setting('placeHolder', $defaultUrl);
         }
-
         // Return the image URL or the default placeholder
-        return $settings[$key]?->getFirstMediaUrl($collection, $conversion) ?? \setting('placeHolder', $defaultUrl);
+        $url = $conversion 
+            ? $setting->getFirstMediaUrl($collection, $conversion)
+            : $setting->getFirstMediaUrl($collection);
+            
+        return $url ?: \setting('placeHolder', $defaultUrl);
     }
-}
-if (! function_exists('getImage')) {
+}if (! function_exists('getImage')) {
 
     function getImage($model, string $collection, ?string $conversion = null, ?string $defaultUrl = null): string
     {
@@ -97,6 +98,25 @@ if (! function_exists('getImage')) {
         return $default;
     }
 }
+if (! function_exists('starts_with_any')) {
+    /**
+     * Check if a string starts with any of the given prefixes.
+     *
+     * @param string $haystack The string to check
+     * @param array $needles Array of prefixes to check against
+     * @return bool
+     */
+    function starts_with_any(string $haystack, array $needles): bool
+    {
+        foreach ($needles as $needle) {
+            if (str_starts_with($haystack, $needle)) {
+                return true;
+            }
+        }
+        return false;
+    }
+}
+
 if (! function_exists('checkImageUrl')) {
     /**
      * Check if a given URL points to a valid image resource.
@@ -112,7 +132,7 @@ if (! function_exists('checkImageUrl')) {
         }
 
         $allowedPrefixes = [
-            'image/',              // generic catch-all for images
+            'image/',              // generic catch-all for images (image/png, image/jpeg, etc.)
         ];
 
         $headers = [
@@ -121,28 +141,34 @@ if (! function_exists('checkImageUrl')) {
         ];
 
         try {
+            // Try HEAD request first (faster, doesn't download the image)
             $response = Http::timeout(7)->withHeaders($headers)->head($url);
 
             if ($response->successful()) {
                 $contentType = $response->header('Content-Type');
-                $contentLength = (int) ($response->header('Content-Length') ?? 0);
-
-                if ($contentType && starts_with_any($contentType, $allowedPrefixes) && $contentLength >= 0) {
+                
+                // Check if content-type starts with 'image/'
+                if ($contentType && starts_with_any($contentType, $allowedPrefixes)) {
                     return true;
                 }
             }
 
-            // Some servers don't support HEAD; try a lightweight GET
+            // Some servers don't support HEAD or return wrong headers; try a lightweight GET
             $response = Http::timeout(10)->withHeaders($headers)->get($url);
+            
             if (! $response->successful()) {
                 return false;
             }
 
             $contentType = $response->header('Content-Type');
+            
+            // Check content-type from GET request
             if ($contentType && starts_with_any($contentType, $allowedPrefixes)) {
                 return true;
             }
         } catch (\Throwable $e) {
+            // Log the error for debugging (optional)
+            // \Log::warning('checkImageUrl failed for URL: ' . $url, ['error' => $e->getMessage()]);
             return false;
         }
 

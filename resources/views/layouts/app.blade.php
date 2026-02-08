@@ -11,7 +11,8 @@
 
         {{-- This is a sidebar that works also as a drawer on small screens --}}
         {{-- Notice the `main-drawer` reference here --}}
-        <x-slot:sidebar drawer="main-drawer" collapsible class="bg-base-100">
+        @persist('sidebar')
+        <x-slot:sidebar drawer="main-drawer" collapsible wire:navigate:scroll class="bg-base-100">
           @if ($user = auth()->user())
             <x-card class="px-2 pb-3 bg-base-100 dark:bg-base-200 rounded-xl">
               <div class="flex flex-row items-center justify-between gap-2">
@@ -67,6 +68,7 @@
             </x-menu-sub>
           </x-menu>
         </x-slot:sidebar>
+        @endpersist
 
         {{-- The `$slot` goes here --}}
         {{--        @yield('content')--}}

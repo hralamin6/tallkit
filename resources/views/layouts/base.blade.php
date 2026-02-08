@@ -25,30 +25,15 @@
       <meta property="og:image:width" content="1536" />
       <meta property="og:image:height" content="1024" />
       <meta name="twitter:card" content="summary" />
-      <link rel="shortcut icon" href="{{ url(asset('logo.png')) }}">
-      {{-- <link rel="shortcut icon" href="@yield('image', getSettingImage('iconImage'))"> --}}
-      <meta property="og:image" content="@yield('image', getSettingImage('iconImage'))" />
-      <meta property="og:image:secure_url" content="@yield('image', getSettingImage('iconImage'))" />
-      <meta name="twitter:image" content="@yield('image', getSettingImage('iconImage'))" />
-
-      {{-- Chart.js for Activity Dashboard --}}
-      <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-      <script src="{{ asset('tiny.js') }}"></script>
-
+      {{-- <link rel="shortcut icon" href="{{ url(asset('logo.png')) }}"> --}}
+      <link rel="shortcut icon" href="@yield('image', getSettingImage('iconImage', 'icon'))">
+      <meta property="og:image" content="@yield('image', getSettingImage('iconImage', 'icon'))" />
+      <meta property="og:image:secure_url" content="@yield('image', getSettingImage('iconImage', 'icon'))" />
+      <meta name="twitter:image" content="@yield('image', getSettingImage('iconImage', 'icon'))" />
         @vite(['resources/css/app.css', 'resources/js/app.js'])
-        @livewireStyles
-        @livewireScripts
       @stack('styles')
       @stack('scripts')
 
-        <!-- CropperJS for Mary File cropper -->
-{{--        <link rel="stylesheet" href="https://unpkg.com/cropperjs@1.6.1/dist/cropper.min.css">--}}
-{{--        <script defer src="https://unpkg.com/cropperjs@1.6.1/dist/cropper.min.js"></script>--}}
-{{--      <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.1/Sortable.min.js"></script>--}}
-      {{-- <script src="https://cdn.tiny.cloud/1/mbka6lqu2y9tf2q7tvoe1clyhs6oxwsct5ma91a7re40y5ms/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script> --}}
-      {{-- ========================================== --}}
-      {{-- GLOBAL ECHO LISTENER FOR HEADER BADGE --}}
-      {{-- Updates unread count on all pages except chat --}}
       {{-- ========================================== --}}
       @if(auth()->check())
         <script>

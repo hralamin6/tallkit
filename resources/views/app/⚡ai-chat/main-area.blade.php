@@ -25,7 +25,7 @@
             x-ref="messagesContainer"
         >
             @forelse($this->aiMessages as $message)
-                @include('livewire.app.ai-chat.message', ['message' => $message])
+                @include('app.⚡ai-chat.message', ['message' => $message])
             @empty
                 <div class="flex items-center justify-center h-full">
                     <div class="text-center text-base-content/60">
@@ -60,7 +60,7 @@
         </div>
 
         {{-- Message Input Area --}}
-        @include('livewire.app.ai-chat.input-area')
+        @include('app.⚡ai-chat.input-area')
     @else
         {{-- No Conversation Selected --}}
         <div class="flex items-center justify-center h-full p-4">

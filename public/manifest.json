@@ -1,6 +1,6 @@
 {
-    "name": "larakit",
-    "short_name": "larakit",
+    "name": "",
+    "short_name": "",
     "background_color": "#6777ef",
     "display": "fullscreen",
     "description": "",
@@ -8,7 +8,7 @@
     "start_url": "/",
     "icons": [
         {
-            "src": "",
+            "src": "https://lifeos.hr/storage/Setting/1//iconImage1770196373.jpg",
             "sizes": "512x512",
             "type": "image/png"
         }
