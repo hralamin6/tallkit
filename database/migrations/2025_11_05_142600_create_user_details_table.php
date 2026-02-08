@@ -30,8 +30,8 @@ return new class extends Migration
             $table->foreignId('union_id')->nullable()->constrained()->nullOnDelete();
             
             // Social Media Links
-            $table->string('website')->nullable();
-            $table->string('facebook')->nullable();
+            $table->string('website')->nullable()->default('http://website.com');
+            $table->string('facebook')->nullable()->default('http://facebook.com');
             $table->string('twitter')->nullable();
             $table->string('instagram')->nullable();
             $table->string('linkedin')->nullable();

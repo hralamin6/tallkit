@@ -34,11 +34,11 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('profile')->singleFile()->registerMediaConversions(function (?Media $media = null) {
-            $this->addMediaConversion('thumb')->quality('10')->nonQueued();
+            $this->addMediaConversion('thumb')->quality('80')->nonQueued();
         });
 
         $this->addMediaCollection('banner')->singleFile()->registerMediaConversions(function (?Media $media = null) {
-            $this->addMediaConversion('thumb')->quality('10')->nonQueued();
+            $this->addMediaConversion('thumb')->quality('80')->nonQueued();
         });
     }
 
