@@ -169,28 +169,29 @@ class PostGeneratorService
     /**
      * Generate post content using AI
      */
-    private function generatePostContent($aiService, array $typeConfig, string $contentType): ?array
+    private function generatePostContent($aiService, array $typeConfig, string $contentType, $model=null): ?array
     {
-        $prompt = "Write a comprehensive, engaging fitness/health blog post about {$typeConfig['title_prompt']}. "
-            . "Requirements:\n"
-            . "- Length: 600-800 words (keep it concise but informative)\n"
-            . "- Use bullet points and numbered lists where appropriate\n"
-            . "- Use **bold** for emphasis on key points\n"
-            . "- Use *italic* for subtle emphasis\n"
-            . "- Include relevant emojis (💪, 🏃, 🥗, etc.) sparingly for engagement\n"
-            . "- NO tables or complex formatting\n"
-            . "- Include a brief call-to-action at the end\n"
-            . "- Make it informative, actionable, and motivational\n"
-            . "- Write in a friendly, professional tone\n\n"
-            . "Return ONLY a JSON object with this exact format:\n"
-            . '{"title": "Engaging Post Title", "excerpt": "150-char summary", "content": "Full post content with markdown formatting"}';
+        $prompt = "{$typeConfig['title_prompt']} সম্পর্কে একটি বিস্তারিত এবং আকর্ষণীয় ফিটনেস/স্বাস্থ্য বিষয়ক ব্লগ পোস্ট লিখুন। "
+            . "শর্তাবলী:\n"
+            . "- দৈর্ঘ্য: ৬০০-৮০০ শব্দ (সংক্ষিপ্ত কিন্তু তথ্যবহুল রাখুন)\n"
+            . "- যথাযথ স্থানে বুলেট পয়েন্ট এবং সংখ্যায়িত তালিকা ব্যবহার করুন\n"
+            . "- মূল পয়েন্টগুলোতে জোর দেওয়ার জন্য **বোল্ড** ব্যবহার করুন\n"
+            . "- সূক্ষ্ম গুরুত্ব বোঝাতে *ইটালিক* ব্যবহার করুন\n"
+            . "- ব্যস্ততা বাড়াতে প্রাসঙ্গিক ইমোজি (💪, 🏃, 🥗, ইত্যাদি) পরিমিতভাবে ব্যবহার করুন\n"
+            . "- কোনো টেবিল বা জটিল ফরম্যাটিং ব্যবহার করবেন না\n"
+            . "- শেষে একটি সংক্ষিপ্ত কল-টু-অ্যাকশন অন্তর্ভুক্ত করুন\n"
+            . "- এটি তথ্যবহুল, কার্যকর এবং অনুপ্রেরণামূলক করুন\n"
+            . "- বন্ধুত্বপূর্ণ এবং পেশাদার টোনে বাংলায় লিখুন\n\n"
+            . "শুধুমাত্র এই ফরম্যাটে একটি JSON অবজেক্ট রিটার্ন করুন:\n"
+            . '{"title": "আকর্ষণীয় পোস্টের শিরোনাম", "excerpt": "১৫০ অক্ষরের সারসংক্ষেপ", "content": "মার্কডাউন ফরম্যাটে সম্পূর্ণ পোস্টের কন্টেন্ট"}';
 
         try {
             $response = $aiService->chat([
                 ['role' => 'user', 'content' => $prompt]
             ], [
-                // 'temperature' => 0.2,
-                // 'max_tokens' => 12000, // Increased for complete responses
+                ...($model ? ['model' => $model] : []),
+                'temperature' => 1,
+                'max_tokens' => 8000, // Increased for complete responses
             ]);
 
             $responseText = is_array($response) ? ($response['content'] ?? '') : $response;
@@ -198,13 +199,52 @@ class PostGeneratorService
 
             \Log::info('Raw AI response received', [
                 'length' => strlen($responseText),
-                'first_200' => substr($responseText, 0, 200),
-                'last_200' => substr($responseText, -200)
+                'all' => $responseText,
             ]);
 
-            // Find JSON by locating the first { and last }
+            // Find JSON by locating the first { and matching closing }
             $firstBrace = strpos($responseText, '{');
-            $lastBrace = strrpos($responseText, '}');
+            
+            if ($firstBrace !== false) {
+                // Find the matching closing brace by counting
+                $braceCount = 0;
+                $lastBrace = false;
+                $inString = false;
+                $escapeNext = false;
+                
+                for ($i = $firstBrace; $i < strlen($responseText); $i++) {
+                    $char = $responseText[$i];
+                    
+                    if ($escapeNext) {
+                        $escapeNext = false;
+                        continue;
+                    }
+                    
+                    if ($char === '\\') {
+                        $escapeNext = true;
+                        continue;
+                    }
+                    
+                    if ($char === '"') {
+                        $inString = !$inString;
+                        continue;
+                    }
+                    
+                    if (!$inString) {
+                        if ($char === '{') {
+                            $braceCount++;
+                        } elseif ($char === '}') {
+                            $braceCount--;
+                            if ($braceCount === 0) {
+                                $lastBrace = $i;
+                                break;
+                            }
+                        }
+                    }
+                }
+            } else {
+                $lastBrace = false;
+            }
             
             if ($firstBrace !== false && $lastBrace !== false && $lastBrace > $firstBrace) {
                 $jsonString = substr($responseText, $firstBrace, $lastBrace - $firstBrace + 1);
@@ -214,7 +254,22 @@ class PostGeneratorService
                     'preview' => substr($jsonString, 0, 300)
                 ]);
                 
-                $data = json_decode($jsonString, true);
+                // Clean the JSON string - remove problematic control characters but keep \n and \t
+                // Remove control chars except: \n (0x0A), \r (0x0D), \t (0x09)
+                $jsonString = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $jsonString);
+                $jsonString = mb_convert_encoding($jsonString, 'UTF-8', 'UTF-8'); // Fix encoding
+                
+                // Decode JSON with proper Unicode handling
+                $data = json_decode($jsonString, true, 512, JSON_BIGINT_AS_STRING);
+                $jsonError = json_last_error();
+                
+                if ($jsonError !== JSON_ERROR_NONE) {
+                    \Log::error('JSON decode error', [
+                        'error' => json_last_error_msg(),
+                        'error_code' => $jsonError,
+                        'json_preview' => substr($jsonString, 0, 500)
+                    ]);
+                }
                 
                 if ($data && isset($data['title'], $data['excerpt'], $data['content'])) {
                     \Log::info('AI generated post content', [
@@ -225,10 +280,12 @@ class PostGeneratorService
                     return $data;
                 } else {
                     \Log::warning('JSON decoded but missing required fields', [
-                        'has_title' => isset($data['title']),
-                        'has_excerpt' => isset($data['excerpt']),
-                        'has_content' => isset($data['content']),
-                        'keys' => $data ? array_keys($data) : []
+                        'has_title' => isset($data['title']) ? 'yes' : 'no',
+                        'has_excerpt' => isset($data['excerpt']) ? 'yes' : 'no',
+                        'has_content' => isset($data['content']) ? 'yes' : 'no',
+                        'keys' => $data ? array_keys($data) : [],
+                        'data_type' => gettype($data),
+                        'is_null' => $data === null ? 'yes' : 'no'
                     ]);
                 }
             }
@@ -292,31 +349,31 @@ class PostGeneratorService
      */
     private function generateSEOFields($aiService, string $title, string $excerpt): array
     {
-        $prompt = "Generate SEO meta fields for a blog post titled: \"{$title}\". "
-            . "Excerpt: {$excerpt}. "
-            . "Return ONLY a JSON object: "
-            . '{"meta_title": "60-char SEO title", "meta_description": "155-char description", "meta_keywords": "keyword1, keyword2, keyword3"}';
+        // $prompt = "Generate SEO meta fields for a blog post titled: \"{$title}\". "
+        //     . "Excerpt: {$excerpt}. "
+        //     . "Return ONLY a JSON object: "
+        //     . '{"meta_title": "60-char SEO title", "meta_description": "155-char description", "meta_keywords": "keyword1, keyword2, keyword3"}';
 
-        try {
-            $response = $aiService->chat([
-                ['role' => 'user', 'content' => $prompt]
-            ], [
-                'temperature' => 0.7,
-                'max_tokens' => 200,
-            ]);
+        // try {
+        //     $response = $aiService->chat([
+        //         ['role' => 'user', 'content' => $prompt]
+        //     ], [
+        //         'temperature' => 0.7,
+        //         'max_tokens' => 2000,
+        //     ]);
 
-            $responseText = is_array($response) ? ($response['content'] ?? '') : $response;
-            $responseText = html_entity_decode(strip_tags($responseText), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        //     $responseText = is_array($response) ? ($response['content'] ?? '') : $response;
+        //     $responseText = html_entity_decode(strip_tags($responseText), ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
-            if (preg_match('/\{[^}]*"meta_title"[^}]*\}/s', $responseText, $matches)) {
-                $data = json_decode($matches[0], true);
-                if ($data) {
-                    return $data;
-                }
-            }
-        } catch (\Exception $e) {
-            \Log::warning('SEO generation failed', ['error' => $e->getMessage()]);
-        }
+        //     if (preg_match('/\{[^}]*"meta_title"[^}]*\}/s', $responseText, $matches)) {
+        //         $data = json_decode($matches[0], true);
+        //         if ($data) {
+        //             return $data;
+        //         }
+        //     }
+        // } catch (\Exception $e) {
+        //     \Log::warning('SEO generation failed', ['error' => $e->getMessage()]);
+        // }
 
         // Fallback
         return [
@@ -334,10 +391,15 @@ class PostGeneratorService
         $pollinationsService = AiServiceFactory::make('pollinations');
         
         // Create image prompt based on post content
-        $prompt = "Professional fitness/health blog featured image for article titled: \"{$postData['title']}\". "
-            . "Style: modern, vibrant, motivational, high quality photography. "
-            . "Content should match the topic and be visually appealing. "
-            . "No text overlay, just imagery.";
+        $prompt = "Photorealistic professional blog thumbnail image inspired by the article theme: \"{$postData['title']}\". 
+Scene: modern fitness environment with a modest, athletic adult male, respectful Islamic aesthetic. 
+Style: high-end photography, sharp focus, natural lighting, vibrant but tasteful colors, cinematic depth of field. 
+Mood: confident, disciplined, uplifting, calm strength. 
+Composition: subject centered or rule-of-thirds, clean background, visually balanced, thumbnail-friendly. 
+Clothing: fully modest athletic wear, long sleeves, no skin exposure beyond hands and face. 
+Content rules: no women, no sexualized poses, no religious symbols used disrespectfully. 
+Hard constraints: no text, no typography, no logos, no watermarks, no UI elements, no symbols, no captions.";
+
 
         \Log::info('Generating featured image for post', [
             'post_id' => $post->id,

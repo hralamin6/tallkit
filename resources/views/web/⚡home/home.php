@@ -1,73 +1,67 @@
 <?php
 
-use App\Models\GuestSubscription;
+use App\Models\Category;
+use App\Models\Post;
+use App\Models\User;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
-use NotificationChannels\WebPush\WebPushMessage;
-use NotificationChannels\WebPush\WebPushChannel;
-use Minishlink\WebPush\WebPush;
-use Minishlink\WebPush\Subscription;
 
 new
 #[Layout('layouts.auth')]
 class extends Component
 {
-    private function sendGuestNotifications()
+    /**
+     * Get featured posts
+     */
+    #[Computed]
+    public function featuredPosts()
     {
-        $guestSubscriptions = GuestSubscription::all();
+        return Post::with(['user', 'category'])
+            ->whereNotNull('published_at')
+            ->where('published_at', '<=', now())
+            ->latest('published_at')
+            ->take(6)
+            ->get();
+    }
 
-        if ($guestSubscriptions->isEmpty()) {
-            return;
-        }
+    /**
+     * Get active categories
+     */
+    #[Computed]
+    public function categories()
+    {
+        return Category::where('is_active', true)
+            ->withCount('posts')
+            ->orderBy('posts_count', 'desc')
+            ->take(8)
+            ->get();
+    }
 
-        // Initialize WebPush with VAPID keys
-        $webPush = new WebPush([
-            'VAPID' => [
-                'subject' => config('app.url'),
-                'publicKey' => config('webpush.vapid.public_key'),
-                'privateKey' => config('webpush.vapid.private_key'),
-            ],
-        ]);
+    /**
+     * Get top contributors (users with most posts)
+     */
+    #[Computed]
+    public function topContributors()
+    {
+        return User::whereHas('posts')
+            ->withCount('posts')
+            ->orderBy('posts_count', 'desc')
+            ->take(6)
+            ->get();
+    }
 
-        foreach ($guestSubscriptions as $guestSub) {
-            try {
-                // Create subscription object
-                $subscription = Subscription::create([
-                    'endpoint' => $guestSub->endpoint,
-                    'publicKey' => $guestSub->public_key,
-                    'authToken' => $guestSub->auth_token,
-                    'contentEncoding' => $guestSub->content_encoding,
-                ]);
-
-                // Create notification payload
-                $payload = json_encode([
-                    'title' => 'Welcome Guest!',
-                    'body' => 'This is a test notification for guest users',
-                    'icon' => '/logo.png',
-                    'badge' => '/logo.png',
-                    'data' => [
-                        'url' => '/',
-                        'timestamp' => now()->toISOString(),
-                    ],
-                ]);
-
-                // Send notification
-                $result = $webPush->sendOneNotification($subscription, $payload);
-
-                if (!$result->isSuccess()) {
-                    \Log::error('Failed to send push notification to guest: ' . $result->getReason());
-                }
-
-            } catch (\Exception $e) {
-                \Log::error('Error sending push notification to guest: ' . $e->getMessage());
-            }
-        }
-
-        // Flush any remaining notifications
-        foreach ($webPush->flush() as $report) {
-            if (!$report->isSuccess()) {
-                \Log::error('Push notification failed: ' . $report->getReason());
-            }
-        }
+    /**
+     * Get stats
+     */
+    #[Computed]
+    public function stats()
+    {
+        return [
+            'posts' => Post::whereNotNull('published_at')->count(),
+            'categories' => Category::where('is_active', true)->count(),
+            'users' => User::count(),
+            'views' => Post::sum('views_count'),
+        ];
     }
 };

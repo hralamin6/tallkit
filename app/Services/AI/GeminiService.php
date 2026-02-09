@@ -10,7 +10,7 @@ class GeminiService implements AiServiceInterface
 {
     protected string $apiKey;
     protected string $baseUrl = 'https://generativelanguage.googleapis.com/v1beta';
-    protected string $defaultModel = 'gemini-2.5-flash';
+    protected string $defaultModel = 'gemma-3-27b-it';
 
     public function __construct()
     {
@@ -138,21 +138,51 @@ class GeminiService implements AiServiceInterface
 
 
 return [
-  // 🌟 GEMINI 2.5 SERIES — Free Tier Models
-'gemini-2.5-flash' => 'Gemini 2.5 Flash (img) (20 rpd)',
-'gemini-2.5-flash-lite' => 'Gemini 2.5 Flash Lite (img) (20 rpd)',
-'gemini-2.5-flash-tts' => 'Gemini 2.5 Flash TTS (10 rpd)',
-'gemini-3-flash' => 'Gemini 3 Flash (img) (20 rpd)',
-'gemini-robotics-er-1.5-preview' => 'Gemini Robotics ER 1.5 Preview (img) (20 rpd)',
-'gemma-3-1b' => 'Gemma 3 1B (14400 rpd)',
-'gemma-3-2b' => 'Gemma 3 2B (14400 rpd)',
-'gemma-3-4b' => 'Gemma 3 4B (14400 rpd)',
-'gemma-3-12b' => 'Gemma 3 12B (14400 rpd)',
-'gemma-3-27b' => 'Gemma 3 27B (14400 rpd)',
-'gemini-embedding-1' => 'Gemini Embedding 1 (1000 rpd)',
-'gemini-2.5-flash-native-audio-dialog' => 'Gemini 2.5 Flash Native Audio Dialog (Unlimited rpd)',
+    // 🌟 GEMINI 2.5 / 3 SERIES — Free / Flash Models
+    'gemini-2.5-flash' =>
+        'Gemini 2.5 Flash (img) (20 rpd)',
 
+    'gemini-2.5-flash-lite' =>
+        'Gemini 2.5 Flash Lite (img) (20 rpd)',
+
+    'gemini-2.5-flash-preview-tts' =>
+        'Gemini 2.5 Flash TTS (10 rpd)',
+
+    'gemini-3-flash-preview' =>
+        'Gemini 3 Flash (img) (20 rpd)',
+
+    'gemini-robotics-er-1.5-preview' =>
+        'Gemini Robotics ER 1.5 Preview (img) (20 rpd)',
+
+
+    // 🧠 GEMMA 3 SERIES — High RPD Text Models
+    'gemma-3-1b-it' =>
+        'Gemma 3 1B (14400 rpd)',
+
+    'gemma-3-2b-it' =>
+        'Gemma 3 2B (14400 rpd)',
+
+    'gemma-3-4b-it' =>
+        'Gemma 3 4B (14400 rpd)',
+
+    'gemma-3-12b-it' =>
+        'Gemma 3 12B (14400 rpd)',
+
+    'gemma-3-27b-it' =>
+        'Gemma 3 27B (14400 rpd)',
+
+
+    // 🔎 EMBEDDINGS
+    'gemini-embedding-001' =>
+        'Gemini Embedding 001 (1000 rpd)',
+
+
+    // 🔊 AUDIO / LIVE
+    'gemini-2.5-flash-native-audio-latest' =>
+        'Gemini 2.5 Flash Native Audio Dialog (Unlimited rpd)',
+        
 ];
+
 
     }
 

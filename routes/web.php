@@ -5,6 +5,8 @@ use Illuminate\Support\Facades\Route;
 require __DIR__.'/auth.php';
 
 Route::livewire('/', 'web::home')->name('web.home');
+Route::livewire('/posts', 'web::posts')->name('web.posts');
+Route::livewire('/posts/{slug}', 'web::post')->name('web.post');
 
 Route::middleware('auth')->group(function () {
     Route::livewire('/app/', 'app::dashboard')->name('app.dashboard');
