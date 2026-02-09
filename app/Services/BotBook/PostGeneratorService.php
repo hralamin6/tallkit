@@ -189,8 +189,8 @@ class PostGeneratorService
             $response = $aiService->chat([
                 ['role' => 'user', 'content' => $prompt]
             ], [
-                'temperature' => 0.2,
-                'max_tokens' => 12000, // Increased for complete responses
+                // 'temperature' => 0.2,
+                // 'max_tokens' => 12000, // Increased for complete responses
             ]);
 
             $responseText = is_array($response) ? ($response['content'] ?? '') : $response;
