@@ -68,7 +68,8 @@ class GroqService implements AiServiceInterface
             $reply = (string) $html;
             
             return [
-                'content' => $reply ?? '',
+                'raw' => $markdown,  // Raw markdown content
+                'content' => $reply,  // HTML-converted content
                 'tokens' => $data['usage']['total_tokens'] ?? 0,
                 'model' => $data['model'] ?? $model,
             ];

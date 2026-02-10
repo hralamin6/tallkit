@@ -10,7 +10,7 @@ class CerebrasService implements AiServiceInterface
 {
     protected string $apiKey;
     protected string $baseUrl = 'https://api.cerebras.ai/v1';
-    protected string $defaultModel = 'llama3.1-8b';
+    protected string $defaultModel = 'gpt-oss-120b';
 
     public function __construct()
     {

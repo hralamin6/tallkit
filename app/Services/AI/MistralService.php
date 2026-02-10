@@ -10,7 +10,7 @@ class MistralService implements AiServiceInterface
 {
     protected string $apiKey;
     protected string $baseUrl = 'https://api.mistral.ai/v1';
-    protected string $defaultModel = 'mistral-large-2407';
+    protected string $defaultModel = 'mistral-large-2411';
 
     public function __construct()
     {

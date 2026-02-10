@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\Post;
 use App\Models\User;
 use App\Services\AI\AiServiceFactory;
+use App\Services\BotBook\StructuredResponse;
 use Illuminate\Support\Str;
 
 class PostGeneratorService
@@ -14,39 +15,59 @@ class PostGeneratorService
      * Post content types with their characteristics
      */
     private array $contentTypes = [
-        'workout_tips' => [
-            'title_prompt' => 'workout tips, exercise techniques, training methods',
-            'personality_match' => ['dr_fitbot', 'coach_thunder', 'beginner_buddy'],
-        ],
-        'nutrition_advice' => [
-            'title_prompt' => 'nutrition advice, healthy eating, meal planning, diet tips',
-            'personality_match' => ['nutrition_ninja', 'dr_fitbot'],
-        ],
-        'motivation' => [
-            'title_prompt' => 'fitness motivation, inspirational content, mindset, goal setting',
-            'personality_match' => ['coach_thunder', 'beginner_buddy'],
-        ],
-        'wellness_tips' => [
-            'title_prompt' => 'health and wellness, mental health, recovery, sleep, stress management',
-            'personality_match' => ['zen_yogi', 'dr_fitbot'],
-        ],
-        'success_stories' => [
-            'title_prompt' => 'fitness transformation stories, success journeys, before and after',
-            'personality_match' => ['coach_thunder', 'beginner_buddy'],
-        ],
-        'qa_format' => [
-            'title_prompt' => 'fitness Q&A, common questions answered, expert advice',
-            'personality_match' => ['dr_fitbot', 'nutrition_ninja', 'skeptic_sam'],
-        ],
-        'how_to_guides' => [
-            'title_prompt' => 'how-to guides, step-by-step tutorials, beginner guides',
-            'personality_match' => ['beginner_buddy', 'dr_fitbot', 'zen_yogi'],
-        ],
-        'myth_busting' => [
-            'title_prompt' => 'fitness myths debunked, fact vs fiction, science-based truth',
-            'personality_match' => ['skeptic_sam', 'dr_fitbot'],
-        ],
-    ];
+
+    'self_sufficiency' => [
+        'title_prompt' => 'গ্রামীণ জীবন, স্বয়ংসম্পূর্ণতা, আত্মনির্ভরশীল জীবনযাপন, হোমস্টেডিং, অফ-গ্রিড লাইফস্টাইল, শহর বনাম গ্রাম, প্রাকৃতিক জীবন, টেকসই বসবাস',
+        'overview' => 'এই সেকশনটি গ্রামীণ ও স্বয়ংসম্পূর্ণ জীবনধারার দর্শন তুলে ধরে। এখানে কম ভোগে স্বাধীনতা, নিজের খাবার নিজে উৎপাদন, প্রকৃতির সাথে সংযোগ এবং শহুরে জীবনের বিকল্প পথের কথা বলা হয়। উপরের কীওয়ার্ডগুলোর মধ্য থেকে একটি নির্বাচন করে সেই বিষয়ের উপর ইতিবাচক ও বাস্তবসম্মত একটি পোস্ট লিখুন।',
+    ],
+
+    'captain_green_mindset' => [
+        'title_prompt' => 'ক্যাপ্টেন গ্রিন মাইন্ডসেট, শৃঙ্খলা, ডিসিপ্লিন, রুটিন, নেতৃত্ব, মানসিক শক্তি, মিশন-ভিত্তিক জীবনযাপন',
+        'overview' => 'এই সেকশনটি ক্যাপ্টেন গ্রিন পারসোনার মূল ভাবনা তুলে ধরে। এখানে শৃঙ্খলা, আত্মনিয়ন্ত্রণ, দায়িত্ববোধ এবং মিশন-ভিত্তিক জীবনদর্শনের উপর জোর দেওয়া হয়। উপরের কীওয়ার্ডগুলোর যেকোনো একটি বেছে নিয়ে অনুপ্রেরণামূলক ও বাস্তবধর্মী পোস্ট লিখুন।',
+    ],
+
+    'animal_based_nutrition' => [
+        'title_prompt' => 'প্রাণীজ পুষ্টি, প্রাণীজ প্রোটিন, স্বাস্থ্যকর চর্বি, রেড মিট, প্রোটিন ইনভেস্টমেন্ট, শক্তি ও ভাইটালিটি',
+        'overview' => 'এই সেকশনটি প্রাণীজ খাদ্যভিত্তিক পুষ্টি দর্শনের উপর ভিত্তি করে। এখানে প্রোটিন ও ফ্যাটকে শক্তি, সুস্থতা এবং দীর্ঘমেয়াদি স্বাস্থ্যের দৃষ্টিকোণ থেকে আলোচনা করা হয়। উপরের কীওয়ার্ড থেকে একটি নির্বাচন করে তথ্যবহুল ও ব্যালেন্সড পোস্ট লিখুন।',
+    ],
+
+    'plant_toxin_awareness' => [
+        'title_prompt' => 'উদ্ভিদের বিষ, লেক্টিন, অক্সালেট, ফাইটেট, গ্লুটেন, কাঁচা শাকসবজি, গ্রিন স্মুথি, গাট হেলথ',
+        'overview' => 'এই সেকশনটি উদ্ভিদের প্রাকৃতিক প্রতিরক্ষা ব্যবস্থা ও সম্ভাব্য খাদ্য-সংবেদনশীলতা নিয়ে সচেতনতা তৈরির জন্য। এখানে ভয় নয়, বরং বোঝাপড়া ও ব্যক্তিভেদে খাদ্য নির্বাচনের গুরুত্ব তুলে ধরা হয়। উপরের কীওয়ার্ডগুলোর একটি নিয়ে ব্যাখ্যামূলক পোস্ট লিখুন।',
+    ],
+
+    'fermentation_tradition' => [
+        'title_prompt' => 'ফারমেন্টেশন, ল্যাক্টো-ফারমেন্টেড খাবার, কেফির, আচারের বিজ্ঞান, অঙ্কুরোদগম, প্রোবায়োটিক',
+        'overview' => 'এই সেকশনটি ঐতিহ্যবাহী খাদ্য প্রক্রিয়াজাতকরণ পদ্ধতি এবং তাদের উপকারিতা নিয়ে। দাদী-নানীদের জ্ঞান ও আধুনিক পুষ্টি বিজ্ঞানের সংযোগ এখানে মূল ভাবনা। উপরের কীওয়ার্ড থেকে একটি বেছে নিয়ে ব্যবহারিক ও সহজ ভাষায় পোস্ট লিখুন।',
+    ],
+
+    'regenerative_agro' => [
+        'title_prompt' => 'খেসারি ডাল, বিশেষ শস্য, নাইট্রোজেন ফিক্সেশন, মাটির উর্বরতা, রিজেনারেটিভ কৃষি, লোকাল ফসল',
+        'overview' => 'এই সেকশনটি টেকসই কৃষি, মাটির স্বাস্থ্য এবং স্থানীয় শস্য ব্যবস্থার উপর কেন্দ্রীভূত। এখানে খাদ্য নিরাপত্তা ও পরিবেশবান্ধব কৃষির গুরুত্ব তুলে ধরা হয়। উপরের কীওয়ার্ডগুলোর একটি নির্বাচন করে শিক্ষামূলক পোস্ট লিখুন।',
+    ],
+
+    'ethical_products' => [
+        'title_prompt' => 'ক্লিন ফুড, নিরাপদ খাবার, কেফির, সরিষার তেল, খাঁটি খাবার চেনার উপায়, নৈতিক ব্যবসা',
+        'overview' => 'এই সেকশনটি নিরাপদ ও খাঁটি খাবার, নৈতিক ব্যবসা এবং গ্রাম থেকে শহরে খাবার পৌঁছানোর দর্শন তুলে ধরে। উপরের কীওয়ার্ডগুলোর একটি নিয়ে বিশ্বাসযোগ্য ও স্বচ্ছ দৃষ্টিভঙ্গিতে পোস্ট লিখুন।',
+    ],
+
+    'prepping_survival' => [
+        'title_prompt' => 'সারভাইভালিজম, প্রিপিং, সংকট প্রস্তুতি, খাবার মজুদ, অফ-গ্রিড দক্ষতা, মানসিক দৃঢ়তা',
+        'overview' => 'এই সেকশনটি সংকটকালীন প্রস্তুতি এবং আত্মনির্ভরশীল দক্ষতার গুরুত্ব বোঝাতে তৈরি। এখানে ভয় নয়, বরং সচেতন প্রস্তুতির ধারণা দেওয়া হয়। উপরের কীওয়ার্ডগুলোর একটি বেছে নিয়ে বাস্তবধর্মী পোস্ট লিখুন।',
+    ],
+
+    'eco_lifestyle' => [
+        'title_prompt' => 'পরিবেশবান্ধব জীবনযাপন, CEB ঘর নির্মাণ, ইকো হাউসিং, গ্রাউন্ডিং, স্বাস্থ্যকর অভ্যাস',
+        'overview' => 'এই সেকশনটি পরিবেশবান্ধব অবকাঠামো ও প্রাকৃতিক জীবনযাত্রার অভ্যাস নিয়ে। এখানে প্রকৃতির সাথে সামঞ্জস্যপূর্ণ সুস্থ জীবনধারার কথা বলা হয়। উপরের কীওয়ার্ড থেকে একটি নির্বাচন করে ব্যাখ্যামূলক পোস্ট লিখুন।',
+    ],
+
+    'anti_consumerism' => [
+        'title_prompt' => 'ভোক্তাবাদ বিরোধীতা, সস্তা খাবারের ফাঁদ, ফেইক উন্নয়ন, বাস্তব উন্নয়ন, সচেতন জীবনযাপন',
+        'overview' => 'এই সেকশনটি আধুনিক ভোক্তাবাদ ও ভুয়া উন্নয়নের সমালোচনা করে, পাশাপাশি বাস্তব ও টেকসই বিকল্প দেখায়। উপরের কীওয়ার্ডগুলোর একটি নিয়ে চিন্তাশীল ও সমাধানমুখী পোস্ট লিখুন।',
+    ],
+
+];
+
 
     /**
      * Generate multiple posts
@@ -93,7 +114,7 @@ class PostGeneratorService
         $typeConfig = $this->contentTypes[$contentType];
 
         // 2. Find best bot user (least posts + personality match)
-        $botUser = $this->selectBotUser($typeConfig['personality_match']);
+        $botUser = $this->selectBotUser();
         
         if (!$botUser) {
             \Log::warning('No suitable bot user found');
@@ -102,7 +123,7 @@ class PostGeneratorService
 
         // 3. Generate post content with AI (using Gemini for better long-form content)
         $aiService = AiServiceFactory::make('mistral');
-        $postData = $this->generatePostContent($aiService, $typeConfig, $contentType);
+        $postData = $this->generatePostContent($aiService, $typeConfig);
         
         if (!$postData) {
             \Log::warning('AI post content generation failed');
@@ -147,7 +168,7 @@ class PostGeneratorService
     /**
      * Select bot user with least posts and matching personality
      */
-    private function selectBotUser(array $preferredPersonalities): ?User
+    private function selectBotUser(): ?User
     {
         // Get bot users with post counts
         $botUsers = User::whereHas('roles', function ($q) {
@@ -169,11 +190,11 @@ class PostGeneratorService
     /**
      * Generate post content using AI
      */
-    private function generatePostContent($aiService, array $typeConfig, string $contentType, $model=null): ?array
+    private function generatePostContent($aiService, array $typeConfig, $model=null): ?array
     {
-        $prompt = "{$typeConfig['title_prompt']} সম্পর্কে একটি বিস্তারিত এবং আকর্ষণীয় ফিটনেস/স্বাস্থ্য বিষয়ক ব্লগ পোস্ট লিখুন। "
+        $prompt = "{$typeConfig['overview']}. '{$typeConfig['title_prompt']}' সম্পর্কে একটি বিস্তারিত এবং আকর্ষণীয় ব্লগ পোস্ট লিখুন। "
             . "শর্তাবলী:\n"
-            . "- দৈর্ঘ্য: ৬০০-৮০০ শব্দ (সংক্ষিপ্ত কিন্তু তথ্যবহুল রাখুন)\n"
+            . "- দৈর্ঘ্য: ১০০০-১৫০০ শব্দ (সংক্ষিপ্ত কিন্তু তথ্যবহুল রাখুন)\n"
             . "- যথাযথ স্থানে বুলেট পয়েন্ট এবং সংখ্যায়িত তালিকা ব্যবহার করুন\n"
             . "- মূল পয়েন্টগুলোতে জোর দেওয়ার জন্য **বোল্ড** ব্যবহার করুন\n"
             . "- সূক্ষ্ম গুরুত্ব বোঝাতে *ইটালিক* ব্যবহার করুন\n"
@@ -190,120 +211,46 @@ class PostGeneratorService
                 ['role' => 'user', 'content' => $prompt]
             ], [
                 ...($model ? ['model' => $model] : []),
-                'temperature' => 1,
-                'max_tokens' => 8000, // Increased for complete responses
+                'temperature' => 0.6,
+                'max_tokens' => 4000,
+                // max_tokens automatically determined by GroqService based on model
             ]);
 
-            $responseText = is_array($response) ? ($response['content'] ?? '') : $response;
-            $responseText = html_entity_decode(strip_tags($responseText), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            // Get raw markdown content (before HTML conversion)
+            $responseText = is_array($response) ? ($response['raw'] ?? $response['content'] ?? '') : $response;
 
-            \Log::info('Raw AI response received', [
-                'length' => strlen($responseText),
-                'all' => $responseText,
-            ]);
+            \Log::info('Raw AI response received');
 
-            // Find JSON by locating the first { and matching closing }
-            $firstBrace = strpos($responseText, '{');
-            
-            if ($firstBrace !== false) {
-                // Find the matching closing brace by counting
-                $braceCount = 0;
-                $lastBrace = false;
-                $inString = false;
-                $escapeNext = false;
-                
-                for ($i = $firstBrace; $i < strlen($responseText); $i++) {
-                    $char = $responseText[$i];
-                    
-                    if ($escapeNext) {
-                        $escapeNext = false;
-                        continue;
-                    }
-                    
-                    if ($char === '\\') {
-                        $escapeNext = true;
-                        continue;
-                    }
-                    
-                    if ($char === '"') {
-                        $inString = !$inString;
-                        continue;
-                    }
-                    
-                    if (!$inString) {
-                        if ($char === '{') {
-                            $braceCount++;
-                        } elseif ($char === '}') {
-                            $braceCount--;
-                            if ($braceCount === 0) {
-                                $lastBrace = $i;
-                                break;
-                            }
-                        }
-                    }
-                }
-            } else {
-                $lastBrace = false;
-            }
-            
-            if ($firstBrace !== false && $lastBrace !== false && $lastBrace > $firstBrace) {
-                $jsonString = substr($responseText, $firstBrace, $lastBrace - $firstBrace + 1);
-                
-                \Log::info('Extracted JSON string', [
-                    'length' => strlen($jsonString),
-                    'preview' => substr($jsonString, 0, 300)
+            // Use StructuredResponse to parse JSON (Laravel AI SDK style)
+            $structured = new StructuredResponse($responseText);
+
+            if (!$structured->isValid()) {
+                \Log::warning('Failed to parse structured response', [
+                    'error' => $structured->getError(),           
                 ]);
-                
-                // Clean the JSON string - remove problematic control characters but keep \n and \t
-                // Remove control chars except: \n (0x0A), \r (0x0D), \t (0x09)
-                $jsonString = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $jsonString);
-                $jsonString = mb_convert_encoding($jsonString, 'UTF-8', 'UTF-8'); // Fix encoding
-                
-                // Decode JSON with proper Unicode handling
-                $data = json_decode($jsonString, true, 512, JSON_BIGINT_AS_STRING);
-                $jsonError = json_last_error();
-                
-                if ($jsonError !== JSON_ERROR_NONE) {
-                    \Log::error('JSON decode error', [
-                        'error' => json_last_error_msg(),
-                        'error_code' => $jsonError,
-                        'json_preview' => substr($jsonString, 0, 500)
-                    ]);
-                }
-                
-                if ($data && isset($data['title'], $data['excerpt'], $data['content'])) {
-                    \Log::info('AI generated post content', [
-                        'title' => $data['title'],
-                        'excerpt_length' => strlen($data['excerpt']),
-                        'content_length' => strlen($data['content'])
-                    ]);
-                    return $data;
-                } else {
-                    \Log::warning('JSON decoded but missing required fields', [
-                        'has_title' => isset($data['title']) ? 'yes' : 'no',
-                        'has_excerpt' => isset($data['excerpt']) ? 'yes' : 'no',
-                        'has_content' => isset($data['content']) ? 'yes' : 'no',
-                        'keys' => $data ? array_keys($data) : [],
-                        'data_type' => gettype($data),
-                        'is_null' => $data === null ? 'yes' : 'no'
-                    ]);
-                }
+                return null;
             }
 
-            \Log::warning('Failed to parse AI post response', [
-                'response_length' => strlen($responseText),
-                'first_brace_pos' => $firstBrace,
-                'last_brace_pos' => $lastBrace,
-                'response_preview' => substr($responseText, 0, 300),
-                'json_error' => json_last_error_msg()
-            ]);
-        } catch (\Exception $e) {
-            \Log::error('AI post content generation error', [
-                'error' => $e->getMessage()
-            ]);
-        }
+            // Validate required fields
+            if (!$structured->hasFields(['title', 'excerpt', 'content'])) {
+                \Log::warning('Structured response missing required fields');
+                return null;
+            }
 
-        return null;
+            \Log::info('AI generated post content successfully', [
+                'title' => $structured['title'],
+            ]);
+
+            // Return as array (can use array access thanks to ArrayAccess)
+            return $structured->toArray();
+
+        } catch (\Exception $e) {
+            \Log::error('Post content generation failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return null;
+        }
     }
 
     /**
@@ -391,14 +338,10 @@ class PostGeneratorService
         $pollinationsService = AiServiceFactory::make('pollinations');
         
         // Create image prompt based on post content
-        $prompt = "Photorealistic professional blog thumbnail image inspired by the article theme: \"{$postData['title']}\". 
-Scene: modern fitness environment with a modest, athletic adult male, respectful Islamic aesthetic. 
-Style: high-end photography, sharp focus, natural lighting, vibrant but tasteful colors, cinematic depth of field. 
-Mood: confident, disciplined, uplifting, calm strength. 
-Composition: subject centered or rule-of-thirds, clean background, visually balanced, thumbnail-friendly. 
-Clothing: fully modest athletic wear, long sleeves, no skin exposure beyond hands and face. 
-Content rules: no women, no sexualized poses, no religious symbols used disrespectfully. 
-Hard constraints: no text, no typography, no logos, no watermarks, no UI elements, no symbols, no captions.";
+        $prompt = "Photorealistic blog thumbnail that visually expresses the core idea of the title: '{$postData['title']}'. 
+Use symbolism and environment rather than portraits. 
+Cinematic natural light, calm strength, balanced composition, minimal background, no text or logos.";
+
 
 
         \Log::info('Generating featured image for post', [
@@ -410,7 +353,7 @@ Hard constraints: no text, no typography, no logos, no watermarks, no UI element
         $imagePath = $pollinationsService->generateImage($prompt, [
             'width' => 1200,
             'height' => 630, // Standard OG image size
-            'model' => 'flux',
+            'model' => 'zimage',
         ]);
 
         // Add to media library
