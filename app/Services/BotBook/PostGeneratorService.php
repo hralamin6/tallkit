@@ -122,7 +122,7 @@ class PostGeneratorService
         }
 
         // 3. Generate post content with AI (using Gemini for better long-form content)
-        $aiService = AiServiceFactory::make('mistral');
+        $aiService = AiServiceFactory::make('cerebras');
         $postData = $this->generatePostContent($aiService, $typeConfig);
         
         if (!$postData) {
