@@ -195,7 +195,7 @@ class PostGeneratorService
 
         try {
             $response = \App\Ai\Agents\PostWriter::make()
-                ->prompt($prompt, provider: 'mistral');
+                ->prompt($prompt);
 
             if (!$response) {
                 \Log::warning('PostWriter returned empty response');
