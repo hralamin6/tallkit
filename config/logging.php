@@ -127,6 +127,19 @@ return [
             'path' => storage_path('logs/laravel.log'),
         ],
 
+        'botbook' => [
+            'driver' => 'stack',
+            'channels' => ['botbook_daily', 'stderr'],
+            'ignore_exceptions' => false,
+        ],
+
+        'botbook_daily' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/botbook.log'),
+            'level' => 'debug',
+            'days' => 14,
+        ],
+
     ],
 
 ];

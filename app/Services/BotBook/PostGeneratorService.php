@@ -83,7 +83,7 @@ class PostGeneratorService
                 if ($post) {
                     $generatedPosts[] = $post;
                     
-                    \Log::info('Post created', [
+                    \Log::channel('botbook')->info('Post created', [
                         'id' => $post->id,
                         'title' => $post->title,
                         'author' => $post->user->name,
@@ -93,7 +93,7 @@ class PostGeneratorService
                 // Delay to avoid rate limiting
                 sleep(3);
             } catch (\Exception $e) {
-                \Log::error('Post generation failed', [
+                \Log::channel('botbook')->error('Post generation failed', [
                     'iteration' => $i,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString()
@@ -117,7 +117,7 @@ class PostGeneratorService
         $botUser = $this->selectBotUser();
         
         if (!$botUser) {
-            \Log::warning('No suitable bot user found');
+            \Log::channel('botbook')->warning('No suitable bot user found');
             return null;
         }
 
@@ -125,7 +125,7 @@ class PostGeneratorService
         $postData = $this->generatePostContent($typeConfig);
         
         if (!$postData) {
-            \Log::warning('AI post content generation failed');
+            \Log::channel('botbook')->warning('AI post content generation failed');
             return null;
         }
 
@@ -155,7 +155,7 @@ class PostGeneratorService
         try {
             $this->generateFeaturedImage($post, $postData);
         } catch (\Exception $e) {
-            \Log::warning('Featured image generation failed', [
+            \Log::channel('botbook')->warning('Featured image generation failed', [
                 'post_id' => $post->id,
                 'error' => $e->getMessage()
             ]);
@@ -198,21 +198,21 @@ class PostGeneratorService
                 ->prompt($prompt);
 
             if (!$response) {
-                \Log::warning('PostWriter returned empty response');
+                \Log::channel('botbook')->warning('PostWriter returned empty response');
                 return null;
             }
 
             // The SDK handles structured output validation based on the schema
             $structured = $response->structured;
 
-            \Log::info('AI generated post content successfully using PostWriter', [
+            \Log::channel('botbook')->info('AI generated post content successfully using PostWriter', [
                 'title' => $structured['title'] ?? 'N/A',
             ]);
 
             return (array) $structured;
 
         } catch (\Exception $e) {
-            \Log::error('PostWriter generation failed', [
+            \Log::channel('botbook')->error('PostWriter generation failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -312,7 +312,7 @@ class PostGeneratorService
 
 
 
-        \Log::info('Generating featured image for post', [
+        \Log::channel('botbook')->info('Generating featured image for post', [
             'post_id' => $post->id,
             'prompt' => $prompt
         ]);
@@ -321,7 +321,7 @@ class PostGeneratorService
         $imagePath = $pollinationsService->generateImage($prompt, [
             'width' => 1200,
             'height' => 630, // Standard OG image size
-            'model' => 'imagen-4',
+            'model' => 'flux',
         ]);
 
         // Add to media library
@@ -333,7 +333,7 @@ class PostGeneratorService
             unlink($imagePath);
         }
 
-        \Log::info('Featured image generated and attached', [
+        \Log::channel('botbook')->info('Featured image generated and attached', [
             'post_id' => $post->id
         ]);
     }
