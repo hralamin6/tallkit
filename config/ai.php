@@ -81,13 +81,6 @@ return [
             'driver' => 'groq',
             'key' => env('GROQ_API_KEY'),
         ],
-        'pollinations' => [
-            'driver' => 'openai',
-            'key' => env('CEREBRAS_API_KEY'),
-            'url' => 'https://gen.pollinations.ai',
-        ],
-
-
 
         'jina' => [
             'driver' => 'jina',
@@ -105,10 +98,10 @@ return [
             'url' => env('OLLAMA_BASE_URL', 'http://localhost:11434'),
         ],
 
-        // 'openai' => [
-        //     'driver' => 'openai',
-        //     'key' => env('OPENAI_API_KEY'),
-        // ],
+        'openai' => [
+            'driver' => 'openai',
+            'key' => env('OPENAI_API_KEY'),
+        ],
 
         'openrouter' => [
             'driver' => 'openrouter',

@@ -586,7 +586,7 @@ class extends Component
     protected function getDefaultModel(): string
     {
         return match ($this->aiProvider) {
-            'openrouter' => 'sourceful/riverflow-v2-fast',
+            'openrouter' => 'openai/gpt-oss-120b:free',
             'gemini' => 'gemini-2.5-flash',
             'pollinations' => 'nova-micro',
             'cerebras' => 'gpt-oss-120b',

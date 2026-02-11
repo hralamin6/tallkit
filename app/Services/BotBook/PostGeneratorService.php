@@ -121,9 +121,8 @@ class PostGeneratorService
             return null;
         }
 
-        // 3. Generate post content with AI (using Gemini for better long-form content)
-        $aiService = AiServiceFactory::make('cerebras');
-        $postData = $this->generatePostContent($aiService, $typeConfig);
+        // 3. Generate post content with AI using PostWriter agent
+        $postData = $this->generatePostContent($typeConfig);
         
         if (!$postData) {
             \Log::warning('AI post content generation failed');
@@ -134,7 +133,7 @@ class PostGeneratorService
         $category = $this->selectAppropriateCategory($postData['title'], $contentType);
 
         // 5. Generate SEO meta fields
-        $seoData = $this->generateSEOFields($aiService, $postData['title'], $postData['excerpt']);
+        $seoData = $this->generateSEOFields($postData['title'], $postData['excerpt']);
 
         // 6. Create post
         $post = Post::create([
@@ -188,64 +187,32 @@ class PostGeneratorService
     }
 
     /**
-     * Generate post content using AI
+     * Generate post content using PostWriter agent
      */
-    private function generatePostContent($aiService, array $typeConfig, $model=null): ?array
+    private function generatePostContent(array $typeConfig): ?array
     {
-        $prompt = "{$typeConfig['overview']}. '{$typeConfig['title_prompt']}' সম্পর্কে একটি বিস্তারিত এবং আকর্ষণীয় ব্লগ পোস্ট লিখুন। "
-            . "শর্তাবলী:\n"
-            . "- দৈর্ঘ্য: ১০০০-১৫০০ শব্দ (সংক্ষিপ্ত কিন্তু তথ্যবহুল রাখুন)\n"
-            . "- যথাযথ স্থানে বুলেট পয়েন্ট এবং সংখ্যায়িত তালিকা ব্যবহার করুন\n"
-            . "- মূল পয়েন্টগুলোতে জোর দেওয়ার জন্য **বোল্ড** ব্যবহার করুন\n"
-            . "- সূক্ষ্ম গুরুত্ব বোঝাতে *ইটালিক* ব্যবহার করুন\n"
-            . "- ব্যস্ততা বাড়াতে প্রাসঙ্গিক ইমোজি (💪, 🏃, 🥗, ইত্যাদি) পরিমিতভাবে ব্যবহার করুন\n"
-            . "- কোনো টেবিল বা জটিল ফরম্যাটিং ব্যবহার করবেন না\n"
-            . "- শেষে একটি সংক্ষিপ্ত কল-টু-অ্যাকশন অন্তর্ভুক্ত করুন\n"
-            . "- এটি তথ্যবহুল, কার্যকর এবং অনুপ্রেরণামূলক করুন\n"
-            . "- বন্ধুত্বপূর্ণ এবং পেশাদার টোনে বাংলায় লিখুন\n\n"
-            . "শুধুমাত্র এই ফরম্যাটে একটি JSON অবজেক্ট রিটার্ন করুন:\n"
-            . '{"title": "আকর্ষণীয় পোস্টের শিরোনাম", "excerpt": "১৫০ অক্ষরের সারসংক্ষেপ", "content": "মার্কডাউন ফরম্যাটে সম্পূর্ণ পোস্টের কন্টেন্ট"}';
+        $prompt = "{$typeConfig['overview']}. '{$typeConfig['title_prompt']}' সম্পর্কে একটি বিস্তারিত এবং আকর্ষণীয় ব্লগ পোস্ট লিখুন। ";
 
         try {
-            $response = $aiService->chat([
-                ['role' => 'user', 'content' => $prompt]
-            ], [
-                ...($model ? ['model' => $model] : []),
-                'temperature' => 0.6,
-                'max_tokens' => 4000,
-                // max_tokens automatically determined by GroqService based on model
-            ]);
+            $response = \App\Ai\Agents\PostWriter::make()
+                ->prompt($prompt, provider: 'mistral');
 
-            // Get raw markdown content (before HTML conversion)
-            $responseText = is_array($response) ? ($response['raw'] ?? $response['content'] ?? '') : $response;
-
-            \Log::info('Raw AI response received');
-
-            // Use StructuredResponse to parse JSON (Laravel AI SDK style)
-            $structured = new StructuredResponse($responseText);
-
-            if (!$structured->isValid()) {
-                \Log::warning('Failed to parse structured response', [
-                    'error' => $structured->getError(),           
-                ]);
+            if (!$response) {
+                \Log::warning('PostWriter returned empty response');
                 return null;
             }
 
-            // Validate required fields
-            if (!$structured->hasFields(['title', 'excerpt', 'content'])) {
-                \Log::warning('Structured response missing required fields');
-                return null;
-            }
+            // The SDK handles structured output validation based on the schema
+            $structured = $response->structured;
 
-            \Log::info('AI generated post content successfully', [
-                'title' => $structured['title'],
+            \Log::info('AI generated post content successfully using PostWriter', [
+                'title' => $structured['title'] ?? 'N/A',
             ]);
 
-            // Return as array (can use array access thanks to ArrayAccess)
-            return $structured->toArray();
+            return (array) $structured;
 
         } catch (\Exception $e) {
-            \Log::error('Post content generation failed', [
+            \Log::error('PostWriter generation failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -294,7 +261,7 @@ class PostGeneratorService
     /**
      * Generate SEO meta fields
      */
-    private function generateSEOFields($aiService, string $title, string $excerpt): array
+    private function generateSEOFields(string $title, string $excerpt): array
     {
         // $prompt = "Generate SEO meta fields for a blog post titled: \"{$title}\". "
         //     . "Excerpt: {$excerpt}. "
@@ -338,9 +305,10 @@ class PostGeneratorService
         $pollinationsService = AiServiceFactory::make('pollinations');
         
         // Create image prompt based on post content
-        $prompt = "Photorealistic blog thumbnail that visually expresses the core idea of the title: '{$postData['title']}'. 
-Use symbolism and environment rather than portraits. 
-Cinematic natural light, calm strength, balanced composition, minimal background, no text or logos.";
+//         $prompt = "Photorealistic blog thumbnail that visually expresses the core idea of the title: '{$postData['title']}'. 
+// Use symbolism and environment rather than portraits. 
+// Cinematic natural light, calm strength, balanced composition, minimal background, no text or logos.";
+        $prompt = $postData['image_prompt']. ' no text in image, no woman in image';
 
 
 
@@ -353,7 +321,7 @@ Cinematic natural light, calm strength, balanced composition, minimal background
         $imagePath = $pollinationsService->generateImage($prompt, [
             'width' => 1200,
             'height' => 630, // Standard OG image size
-            'model' => 'zimage',
+            'model' => 'imagen-4',
         ]);
 
         // Add to media library
