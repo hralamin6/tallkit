@@ -14,9 +14,9 @@ use Laravel\Ai\Contracts\HasStructuredOutput;
 use Laravel\Ai\Contracts\HasTools;
 use Laravel\Ai\Promptable;
 use Stringable;
-#[Provider('openrouter')]
+#[Provider('mistral')]
 // #[Model('moonshotai/kimi-k2-instruct-0905')]
-#[Model('openai/gpt-oss-120b:free')]
+// #[Model('openai/gpt-oss-120b:free')]
 // #[UseCheapestModel]
 // #[MaxTokens(20000)]
 // #[Temperature(0.7)]

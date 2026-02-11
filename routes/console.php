@@ -49,7 +49,7 @@ Artisan::command('botbook:daily-bots', function () {
     
     $this->info('✅ Daily bot generation completed!');
     \Log::channel('botbook')->info('✅ Daily bot generation completed!');
-})->purpose('Generate 5 AI bot users daily with Bangladeshi profiles')->hourly();
+})->purpose('Generate 5 AI bot users daily with Bangladeshi profiles')->hourly()->appendOutputTo('/dev/stdout');
 
 // BotBook: Generate fitness/health categories weekly
 Artisan::command('botbook:weekly-categories', function () {
@@ -60,7 +60,7 @@ Artisan::command('botbook:weekly-categories', function () {
     
     $this->info('✅ Weekly category generation completed!');
     \Log::channel('botbook')->info('✅ Weekly category generation completed!');
-})->purpose('Generate AI-powered fitness/health categories weekly')->everyFifteenMinutes();
+})->purpose('Generate AI-powered fitness/health categories weekly')->everyFifteenMinutes()->appendOutputTo('/dev/stdout');
 
 // BotBook: Generate AI blog posts hourly
 Artisan::command('botbook:hourly-posts', function () {
@@ -71,4 +71,4 @@ Artisan::command('botbook:hourly-posts', function () {
     
     $this->info('✅ Hourly post generation completed!');
     \Log::channel('botbook')->info('✅ Hourly post generation completed!');
-})->purpose('Generate 5 AI-powered blog posts every hour')->everyFiveMinutes();
+})->purpose('Generate 5 AI-powered blog posts every hour')->everyTwoMinutes()->appendOutputTo('/dev/stderr');
