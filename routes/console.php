@@ -60,7 +60,7 @@ Artisan::command('botbook:weekly-categories', function () {
     
     $this->info('✅ Weekly category generation completed!');
     \Log::channel('botbook')->info('✅ Weekly category generation completed!');
-})->purpose('Generate AI-powered fitness/health categories weekly')->everyFifteenMinutes()->appendOutputTo('/dev/stdout');
+})->purpose('Generate AI-powered fitness/health categories weekly')->everyThirtyMinutes()->appendOutputTo('/dev/stdout');
 
 // BotBook: Generate AI blog posts hourly
 Artisan::command('botbook:hourly-posts', function () {
@@ -71,4 +71,4 @@ Artisan::command('botbook:hourly-posts', function () {
     
     $this->info('✅ Hourly post generation completed!');
     \Log::channel('botbook')->info('✅ Hourly post generation completed!');
-})->purpose('Generate 5 AI-powered blog posts every hour')->everyTwoMinutes()->appendOutputTo('/dev/stderr');
+})->purpose('Generate 5 AI-powered blog posts every hour')->everyTenMinutes()->appendOutputTo('/dev/stderr');
