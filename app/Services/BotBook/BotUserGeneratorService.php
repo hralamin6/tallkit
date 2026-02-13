@@ -63,7 +63,7 @@ class BotUserGeneratorService
     public function generateBotUser(string $botType): User
     {
         $personality = $this->botPersonalities[$botType];
-        $aiService = AiServiceFactory::make('cerebras');
+        $aiService = AiServiceFactory::make('openrouter');
 
         // Generate bot profile using AI
         $profileData = $this->generateBotProfile($aiService, $personality, $botType);
@@ -230,7 +230,7 @@ class BotUserGeneratorService
      */
     private function generateBotProfile($aiService, array $personality, string $botType): array
     {
-        $prompt = "তুমি একজন বাংলাদেশী ফিটনেস এক্সপার্ট AI বট এর প্রোফাইল তৈরি করছো।
+        $prompt = "তুমি একজন বাংলাদেশী  এর প্রোফাইল তৈরি করছো।
 
 বট টাইপ: {$botType}
 দক্ষতা: {$personality['expertise']}
@@ -238,7 +238,7 @@ class BotUserGeneratorService
 
 নিচের ফরম্যাটে JSON আকারে তথ্য দাও (শুধুমাত্র JSON, অন্য কিছু না):
 {
-    \"name\": \"সম্পূর্ণ বাংলা নাম (প্রিফিক্স সহ)\",
+    \"name\": \"সম্পূর্ণ বাংলা নাম\",
     \"gender\": \"male অথবা female\",
     \"address\": \"সম্পূর্ণ বাংলা ঠিকানা (গ্রাম/মহল্লা নাম)\",
     \"bio\": \"150-200 শব্দের বাংলায় পেশাদার বায়ো যেখানে দক্ষতা, অভিজ্ঞতা এবং ফিটনেস দর্শন উল্লেখ থাকবে\"

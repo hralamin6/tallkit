@@ -60,7 +60,7 @@ class CategoryGeneratorService
     public function generateCategories(int $count = 5): array
     {
         $generatedCategories = [];
-        $aiService = AiServiceFactory::make('cerebras');
+        $aiService = AiServiceFactory::make('mistral');
 
         for ($i = 0; $i < $count; $i++) {
             try {

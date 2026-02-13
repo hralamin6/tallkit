@@ -35,8 +35,9 @@ class extends Component
     // ==========================================
     // AI SETTINGS
     // ==========================================
-    public string $aiProvider='cerebras';
-    public string $model='gpt-oss-120b';
+    
+    public string $aiProvider='ollama';
+    public string $model='llama3.2:1b';
     public string $systemPrompt = 'You are a helpful AI assistant. Do not create table. always try to write in bangla if not specified.';
     public float $temperature = 0.7;
     public int $maxTokens = 2000;

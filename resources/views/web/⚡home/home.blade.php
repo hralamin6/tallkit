@@ -79,7 +79,7 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="text-center mb-12">
         <h2 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-          Explore Topics
+          Explore Topicx
         </h2>
         <p class="text-lg text-gray-600 dark:text-gray-400">
           Discover content across various fitness and health categories
