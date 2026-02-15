@@ -30,7 +30,7 @@ $prompt = "একটি বিস্তারিত এবং আকর্ষণ
             . "শুধুমাত্র এই ফরম্যাটে একটি JSON অবজেক্ট রিটার্ন করুন:\n"
             . '{"title": "আকর্ষণীয় পোস্টের শিরোনাম", "excerpt": "১৫০ অক্ষরের সারসংক্ষেপ", "content": "মার্কডাউন ফরম্যাটে সম্পূর্ণ পোস্টের কন্টেন্ট", "image_prompt": "write a nice small blog post image prompt in english for this post"}';
             // Get new response
-            $response = AiServiceFactory::make('mistral')->chat([['role' => 'user', 'content' => $prompt]]);
+            $response = AiServiceFactory::make('nvidia')->chat([['role' => 'user', 'content' => $prompt]]);
             $structured = new StructuredResponse($response['content']);
             if ($structured->isValid() && $structured->hasFields(['title', 'excerpt', 'content'])) {
                 return $structured->toArray();

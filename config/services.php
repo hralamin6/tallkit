@@ -88,9 +88,10 @@ return [
         'api_key' => env('GROQ_API_KEY', ''),
         'base_url' => env('GROQ_BASE_URL', 'https://api.groq.com/openai/v1'),
     ],
-        'ollama' => [
-        'api_key' => env('OLLAMA_API_KEY', ''),
-        'base_url' => env('OLLAMA_BASE_URL', 'http://157.245.104.32'),
+    
+    'nvidia' => [
+        'api_key' => env('NVIDIA_API_KEY', ''),
+        'base_url' => env('NVIDIA_BASE_URL', 'https://integrate.api.nvidia.com/v1'),
     ],
 
 

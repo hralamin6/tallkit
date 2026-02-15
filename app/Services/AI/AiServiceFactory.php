@@ -13,6 +13,7 @@ class AiServiceFactory
             'cerebras' => new CerebrasService(),
             'mistral' => new MistralService(),
             'groq' => new GroqService(),
+            'nvidia' => new NvidiaService(),
             default => throw new \InvalidArgumentException("Unsupported AI provider: {$provider}"),
         };
     }
@@ -26,6 +27,7 @@ class AiServiceFactory
             'cerebras' => 'Cerebras AI',
             'mistral' => 'Mistral AI',
             'groq' => 'Groq',
+            'nvidia' => 'NVIDIA AI',
         ];
     }
 }

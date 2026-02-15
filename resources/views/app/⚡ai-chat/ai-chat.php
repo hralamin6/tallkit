@@ -36,8 +36,8 @@ class extends Component
     // AI SETTINGS
     // ==========================================
     
-    public string $aiProvider='ollama';
-    public string $model='llama3.2:1b';
+    public string $aiProvider='cerebras';
+    public string $model='gpt-oss-120b';
     public string $systemPrompt = 'You are a helpful AI assistant. Do not create table. always try to write in bangla if not specified.';
     public float $temperature = 0.7;
     public int $maxTokens = 2000;
@@ -454,7 +454,10 @@ class extends Component
         $this->generatingImage = true;
 
         try {
-            $aiService = AiServiceFactory::make('pollinations');
+            // Use NVIDIA if selected, otherwise use Pollinations
+            $provider = $this->aiProvider === 'nvidia' ? 'nvidia' : 'pollinations';
+            $aiService = AiServiceFactory::make($provider);
+            
             $imagePath = $aiService->generateImage($this->imagePrompt, [
                 'width' => 1024,
                 'height' => 1024,
@@ -593,7 +596,8 @@ class extends Component
             'cerebras' => 'gpt-oss-120b',
             'mistral' => 'mistral-large-2411',
             'groq' => 'llama-3.3-70b-versatile',
-            default => 'gpt-oss-120b',
+            'nvidia' => 'openai/gpt-oss-120b',
+            // default => 'gpt-oss-120b',
         };
     }
 
@@ -610,6 +614,15 @@ class extends Component
     public function getImageModels(): array
     {
         try {
+            // Try NVIDIA first if available
+            if ($this->aiProvider === 'nvidia') {
+                $service = AiServiceFactory::make('nvidia');
+                if (method_exists($service, 'getImageModels')) {
+                    return $service->getImageModels();
+                }
+            }
+            
+            // Fall back to Pollinations
             $service = AiServiceFactory::make('pollinations');
             if (method_exists($service, 'getImageModels')) {
                 return $service->getImageModels();

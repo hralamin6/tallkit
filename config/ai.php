@@ -92,11 +92,6 @@ return [
             'key' => env('MISTRAL_API_KEY'),
         ],
 
-        'ollama' => [
-            'driver' => 'ollama',
-            'key' => env('OLLAMA_API_KEY', ''),
-            'url' => env('OLLAMA_BASE_URL', 'http://localhost:11434'),
-        ],
 
         'openai' => [
             'driver' => 'openai',

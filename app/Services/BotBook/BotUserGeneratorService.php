@@ -63,7 +63,7 @@ class BotUserGeneratorService
     public function generateBotUser(string $botType): User
     {
         $personality = $this->botPersonalities[$botType];
-        $aiService = AiServiceFactory::make('openrouter');
+        $aiService = AiServiceFactory::make('nvidia');
 
         // Generate bot profile using AI
         $profileData = $this->generateBotProfile($aiService, $personality, $botType);
