@@ -94,5 +94,10 @@ return [
         'base_url' => env('NVIDIA_BASE_URL', 'https://integrate.api.nvidia.com/v1'),
     ],
 
+    'iflow' => [
+        'api_key' => env('IFLOW_API_KEY', ''),
+        'base_url' => env('IFLOW_BASE_URL', 'https://apis.iflow.cn/v1'),
+    ],
+
 
 ];

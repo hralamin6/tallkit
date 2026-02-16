@@ -597,6 +597,7 @@ class extends Component
             'mistral' => 'mistral-large-2411',
             'groq' => 'llama-3.3-70b-versatile',
             'nvidia' => 'openai/gpt-oss-120b',
+            'iflow' => 'iflow-rome-30ba3b',
             // default => 'gpt-oss-120b',
         };
     }

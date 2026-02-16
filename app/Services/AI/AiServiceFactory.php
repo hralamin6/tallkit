@@ -14,6 +14,7 @@ class AiServiceFactory
             'mistral' => new MistralService(),
             'groq' => new GroqService(),
             'nvidia' => new NvidiaService(),
+            'iflow' => new IflowService(),
             default => throw new \InvalidArgumentException("Unsupported AI provider: {$provider}"),
         };
     }
@@ -28,6 +29,7 @@ class AiServiceFactory
             'mistral' => 'Mistral AI',
             'groq' => 'Groq',
             'nvidia' => 'NVIDIA AI',
+            'iflow' => 'iFlow AI',
         ];
     }
 }
