@@ -14,6 +14,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Ai\Ai;
+use Illuminate\Contracts\Events\Dispatcher;
+use Laravel\Ai\Contracts\Gateway\Gateway;
+use App\Ai\Providers\PollinationsProvider;
+use Laravel\Ai\Gateway\Prism\PrismGateway;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -52,6 +57,14 @@ class AppServiceProvider extends ServiceProvider
 
       // Register Global Activity Observer for ALL models using model events
       $this->registerGlobalActivityObserver();
+
+      Ai::extend('pollinations', function ($app, $config) {
+            return new PollinationsProvider(
+                new PrismGateway($app['events']),
+                $config,
+                $app->make(Dispatcher::class)
+            );
+        });
     }
 
     /**

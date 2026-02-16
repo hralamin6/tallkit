@@ -16,7 +16,7 @@ return [
     */
 
     'default' => 'gemini',
-    'default_for_images' => 'gemini',
+    'default_for_images' => 'pollinations',
     'default_for_audio' => 'openai',
     'default_for_transcription' => 'openai',
     'default_for_embeddings' => 'openai',
@@ -52,26 +52,6 @@ return [
     */
 
     'providers' => [
-        'anthropic' => [
-            'driver' => 'anthropic',
-            'key' => env('ANTHROPIC_API_KEY'),
-        ],
-
-        'cohere' => [
-            'driver' => 'cohere',
-            'key' => env('COHERE_API_KEY'),
-        ],
-
-        'deepseek' => [
-            'driver' => 'deepseek',
-            'key' => env('DEEPSEEK_API_KEY'),
-        ],
-
-        'eleven' => [
-            'driver' => 'eleven',
-            'key' => env('ELEVENLABS_API_KEY'),
-        ],
-
         'gemini' => [
             'driver' => 'gemini',
             'key' => env('GEMINI_API_KEY'),
@@ -82,36 +62,45 @@ return [
             'key' => env('GROQ_API_KEY'),
         ],
 
-        'jina' => [
-            'driver' => 'jina',
-            'key' => env('JINA_API_KEY'),
-        ],
-
         'mistral' => [
             'driver' => 'mistral',
             'key' => env('MISTRAL_API_KEY'),
         ],
 
 
-        'openai' => [
-            'driver' => 'openai',
-            'key' => env('OPENAI_API_KEY'),
-        ],
-
         'openrouter' => [
             'driver' => 'openrouter',
             'key' => env('OPENROUTER_API_KEY'),
         ],
-
-        'voyageai' => [
-            'driver' => 'voyageai',
-            'key' => env('VOYAGEAI_API_KEY'),
+        'pollinations' => [
+            'driver' => 'pollinations',
+            'key' => env('POLLINATIONS_API_KEY'),
+            'url' => 'https://gen.pollinations.ai/v1',
         ],
 
-        'xai' => [
-            'driver' => 'xai',
-            'key' => env('XAI_API_KEY'),
+
+        'cerebras' => [
+            'driver' => 'groq',
+            'key' => env('CEREBRAS_API_KEY'),
+            'url' => env('CEREBRAS_BASE_URL', 'https://api.cerebras.ai/v1'),
         ],
+        'iflow' => [
+            'driver' => 'groq',
+            'key' => env('IFLOW_API_KEY'),
+            'url' => env('IFLOW_BASE_URL', 'https://apis.iflow.cn/v1'),
+        ],
+        'nvidia' => [
+            'driver' => 'groq',
+            'key' => env('NVIDIA_API_KEY'),
+            'url' => env('NVIDIA_BASE_URL', 'https://integrate.api.nvidia.com/v1'),
+        ],
+        'custom' => [
+            'driver' => 'groq',
+            'key' => env('CUSTOM_API_KEY'),
+            'url' => env('CUSTOM_BASE_URL', 'http://139.59.25.41:20128/v1'),
+        ],
+
+
     ],
 
 ];

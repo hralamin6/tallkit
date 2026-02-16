@@ -18,32 +18,31 @@
                     <form wire:submit="updateSettings" class="space-y-4">
                         {{-- AI Provider --}}
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                AI Provider
-                            </label>
-                            <select 
+                            <x-choices-offline
+                                label="AI Provider"
                                 wire:model.live="aiProvider"
-                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500"
-                            >
-                                @foreach($this->getAvailableProviders() as $key => $label)
-                                    <option value="{{ $key }}">{{ $label }}</option>
-                                @endforeach
-                            </select>
+                                :options="$this->getAvailableProviders()"
+                                option-value="id"
+                                option-label="name"
+                                placeholder="Select AI Provider..."
+                                single
+                                searchable
+                            />
                         </div>
 
                         {{-- Model --}}
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Model
-                            </label>
-                            <select 
+                            <x-choices-offline
+                                label="Model"
                                 wire:model.live="model"
-                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500"
-                            >
-                                @foreach($this->getAvailableModels() as $key => $label)
-                                    <option value="{{ $key }}">{{ $label }}</option>
-                                @endforeach
-                            </select>
+                                :options="$this->getAvailableModels()"
+                                option-value="id"
+                                option-label="name"
+                                placeholder="Search models..."
+                                single
+                                clearable
+                                searchable
+                            />
                         </div>
 
                         {{-- System Prompt --}}
@@ -51,7 +50,7 @@
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 System Prompt
                             </label>
-                            <textarea 
+                            <textarea
                                 wire:model="systemPrompt"
                                 rows="4"
                                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500"
@@ -64,11 +63,11 @@
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Temperature: {{ $temperature }}
                             </label>
-                            <input 
-                                type="range" 
+                            <input
+                                type="range"
                                 wire:model.live="temperature"
-                                min="0" 
-                                max="2" 
+                                min="0"
+                                max="2"
                                 step="0.1"
                                 class="w-full"
                             />
@@ -84,11 +83,11 @@
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Max Tokens: {{ $maxTokens }}
                             </label>
-                            <input 
-                                type="range" 
+                            <input
+                                type="range"
                                 wire:model.live="maxTokens"
-                                min="100" 
-                                max="4000" 
+                                min="100"
+                                max="4000"
                                 step="100"
                                 class="w-full"
                             />
@@ -96,14 +95,14 @@
 
                         {{-- Actions --}}
                         <div class="flex justify-end gap-2 pt-4 border-t dark:border-gray-600">
-                            <button 
+                            <button
                                 type="button"
                                 wire:click="$set('showSettingsModal', false)"
                                 class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition"
                             >
                                 Cancel
                             </button>
-                            <button 
+                            <button
                                 type="submit"
                                 class="px-4 py-2 text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 rounded-lg transition"
                             >
@@ -137,20 +136,17 @@
                     <form wire:submit="generateImage" class="space-y-4">
                         {{-- Model Selection --}}
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Image Model
-                            </label>
-                            <select 
+                            <x-choices-offline
+                                label="Image Model"
                                 wire:model="imageModel"
-                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-purple-500"
-                            >
-                                @foreach($this->getImageModels() as $modelId => $modelName)
-                                    <option value="{{ $modelId }}">{{ $modelName }}</option>
-                                @endforeach
-                            </select>
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                💡 Flux Schnell and Z-Image Turbo offer best value (5K pollen)
-                            </p>
+                                :options="$this->getImageModels()"
+                                option-value="id"
+                                option-label="name"
+                                placeholder="Search image models..."
+                                single
+                                searchable
+                                hint="💡 Flux Schnell and Z-Image Turbo offer best value (5K pollen)"
+                            />
                         </div>
 
                         {{-- Image Prompt --}}
@@ -158,7 +154,7 @@
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Image Prompt
                             </label>
-                            <textarea 
+                            <textarea
                                 wire:model="imagePrompt"
                                 rows="4"
                                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500"
@@ -171,14 +167,14 @@
                         </div>
 
                         <div class="flex justify-end gap-2 pt-4 border-t dark:border-gray-600">
-                            <button 
+                            <button
                                 type="button"
                                 wire:click="$set('showImageGeneratorModal', false)"
                                 class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition"
                             >
                                 Cancel
                             </button>
-                            <button 
+                            <button
                                 type="submit"
                                 class="px-4 py-2 text-sm font-medium text-white bg-purple-500 hover:bg-purple-600 rounded-lg transition disabled:opacity-50"
                                 wire:loading.attr="disabled"

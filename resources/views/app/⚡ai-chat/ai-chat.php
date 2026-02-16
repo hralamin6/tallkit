@@ -35,7 +35,7 @@ class extends Component
     // ==========================================
     // AI SETTINGS
     // ==========================================
-    
+
     public string $aiProvider='cerebras';
     public string $model='gpt-oss-120b';
     public string $systemPrompt = 'You are a helpful AI assistant. Do not create table. always try to write in bangla if not specified.';
@@ -85,7 +85,7 @@ class extends Component
             ->aiConversations()
             ->orderBy('last_message_at', 'desc')
             ->first();
-            
+
         if ($firstConversation) {
             $this->selectedConversationId = $firstConversation->id;
         }
@@ -242,7 +242,7 @@ class extends Component
                             ];
                         }
                     }
-                    
+
                     // Then save to media library
                     $userMessage->addMedia($attachment->getRealPath())
                         ->usingFileName($attachment->getClientOriginalName())
@@ -457,7 +457,7 @@ class extends Component
             // Use NVIDIA if selected, otherwise use Pollinations
             $provider = $this->aiProvider === 'nvidia' ? 'nvidia' : 'pollinations';
             $aiService = AiServiceFactory::make($provider);
-            
+
             $imagePath = $aiService->generateImage($this->imagePrompt, [
                 'width' => 1024,
                 'height' => 1024,
@@ -598,7 +598,8 @@ class extends Component
             'groq' => 'llama-3.3-70b-versatile',
             'nvidia' => 'openai/gpt-oss-120b',
             'iflow' => 'iflow-rome-30ba3b',
-            // default => 'gpt-oss-120b',
+            'custom' => 'if/glm-5',
+            default => 'gemini-2.5-flash',
         };
     }
 
@@ -606,7 +607,13 @@ class extends Component
     {
         try {
             $service = AiServiceFactory::make($this->aiProvider);
-            return $service->getAvailableModels();
+            $models = $service->getAvailableModels();
+
+            // Transform to MaryUI format
+            return collect($models)->map(fn($label, $key) => [
+                'id' => $key,
+                'name' => $label
+            ])->values()->toArray();
         } catch (\Exception $e) {
             return [];
         }
@@ -615,28 +622,45 @@ class extends Component
     public function getImageModels(): array
     {
         try {
+            $models = [];
+
             // Try NVIDIA first if available
             if ($this->aiProvider === 'nvidia') {
                 $service = AiServiceFactory::make('nvidia');
                 if (method_exists($service, 'getImageModels')) {
-                    return $service->getImageModels();
+                    $models = $service->getImageModels();
                 }
             }
-            
+
             // Fall back to Pollinations
-            $service = AiServiceFactory::make('pollinations');
-            if (method_exists($service, 'getImageModels')) {
-                return $service->getImageModels();
+            if (empty($models)) {
+                $service = AiServiceFactory::make('pollinations');
+                if (method_exists($service, 'getImageModels')) {
+                    $models = $service->getImageModels();
+                }
             }
-            return [];
+
+            // Transform to MaryUI format
+            return collect($models)->map(fn($label, $key) => [
+                'id' => $key,
+                'name' => $label
+            ])->values()->toArray();
         } catch (\Exception $e) {
             return [];
         }
     }
 
+
+
     public function getAvailableProviders(): array
     {
-        return AiServiceFactory::getAvailableProviders();
+        $providers = AiServiceFactory::getAvailableProviders();
+
+        // Transform to MaryUI format
+        return collect($providers)->map(fn($label, $key) => [
+            'id' => $key,
+            'name' => $label
+        ])->values()->toArray();
     }
 
     // ==========================================

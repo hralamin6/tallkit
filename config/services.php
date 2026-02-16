@@ -98,6 +98,11 @@ return [
         'api_key' => env('IFLOW_API_KEY', ''),
         'base_url' => env('IFLOW_BASE_URL', 'https://apis.iflow.cn/v1'),
     ],
+    'custom' => [
+        'api_key' => env('CUSTOM_API_KEY', ''),
+        'base_url' => env('CUSTOM_BASE_URL', 'http://139.59.25.41:20128/v1'),
+    ],
+
 
 
 ];

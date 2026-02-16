@@ -15,6 +15,7 @@ class AiServiceFactory
             'groq' => new GroqService(),
             'nvidia' => new NvidiaService(),
             'iflow' => new IflowService(),
+            'custom' => new CustomService(),
             default => throw new \InvalidArgumentException("Unsupported AI provider: {$provider}"),
         };
     }
@@ -30,6 +31,7 @@ class AiServiceFactory
             'groq' => 'Groq',
             'nvidia' => 'NVIDIA AI',
             'iflow' => 'iFlow AI',
+            'custom' => 'Custom AI',
         ];
     }
 }

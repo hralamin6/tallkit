@@ -4,14 +4,28 @@ use App\Ai\Agents\PostWriter;
 use App\Services\AI\AiServiceFactory;
 use App\Services\BotBook\StructuredResponse;
 use Illuminate\Support\Facades\Route;
+use Laravel\Ai\Image;
+use Laravel\Ai\Ai;
 
 require __DIR__.'/auth.php';
+Route::get('/image', function(){
+$response = Image::of('A donut sitting on the kitchen counter')->generate();
+$image = $response->images[0];
+ 
+$path = $image->store();
+$path = $image->storeAs('image.jpg');
+$path = $image->storePublicly();
+$path = $image->storePubliclyAs('image.jpg');
+return $path;
+
+});
 
 Route::get('/ai', function(){
 $response = PostWriter::make()
     ->prompt('about islam');
  
 return $response;
+
 
 });
 

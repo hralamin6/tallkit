@@ -14,9 +14,8 @@ use Laravel\Ai\Contracts\HasStructuredOutput;
 use Laravel\Ai\Contracts\HasTools;
 use Laravel\Ai\Promptable;
 use Stringable;
-#[Provider('mistral')]
-// #[Model('moonshotai/kimi-k2-instruct-0905')]
-// #[Model('openai/gpt-oss-120b:free')]
+#[Provider('custom')] 
+#[Model('cx/gpt-5.3-codex')]
 // #[UseCheapestModel]
 // #[MaxTokens(20000)]
 // #[Temperature(0.7)]
@@ -31,7 +30,7 @@ class PostWriter implements Agent, Conversational, HasTools, HasStructuredOutput
     {
         return "একটি বিস্তারিত এবং আকর্ষণীয় ব্লগ পোস্ট লিখুন। "
             . "শর্তাবলী:\n"
-            . "- দৈর্ঘ্য: ৯০০-১০০০ শব্দ (সংক্ষিপ্ত কিন্তু তথ্যবহুল রাখুন)\n"
+            . "- দৈর্ঘ্য: ১০০-২০০ শব্দ (সংক্ষিপ্ত কিন্তু তথ্যবহুল রাখুন)\n"
             . "- যথাযথ স্থানে বুলেট পয়েন্ট এবং সংখ্যায়িত তালিকা ব্যবহার করুন\n"
             . "- মূল পয়েন্টগুলোতে জোর দেওয়ার জন্য **বোল্ড** ব্যবহার করুন\n"
             . "- সূক্ষ্ম গুরুত্ব বোঝাতে *ইটালিক* ব্যবহার করুন\n"
