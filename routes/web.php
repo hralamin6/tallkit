@@ -11,7 +11,7 @@ require __DIR__.'/auth.php';
 Route::get('/image', function(){
 $response = Image::of('A donut sitting on the kitchen counter')->generate();
 $image = $response->images[0];
- 
+
 $path = $image->store();
 $path = $image->storeAs('image.jpg');
 $path = $image->storePublicly();
@@ -23,7 +23,7 @@ return $path;
 Route::get('/ai', function(){
 $response = PostWriter::make()
     ->prompt('about islam');
- 
+
 return $response;
 
 
@@ -51,7 +51,7 @@ $prompt = "একটি বিস্তারিত এবং আকর্ষণ
             }else{
                 return $structured->getError();
             }
-});     
+});
 
 
 

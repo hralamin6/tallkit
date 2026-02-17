@@ -66,7 +66,7 @@ class CategoryGeneratorService
             try {
                 // Generate unique category name using AI
                 $categoryData = $this->generateCategoryWithAI($aiService);
-                
+
                 if (!$categoryData) {
                     \Log::warning('AI category generation returned empty data');
                     continue;
@@ -87,7 +87,7 @@ class CategoryGeneratorService
                 ]);
 
                 $generatedCategories[] = $category;
-                
+
                 \Log::info('Category created', [
                     'name' => $category->name,
                     'slug' => $category->slug
@@ -111,58 +111,25 @@ class CategoryGeneratorService
      */
     private function generateCategoryWithAI($aiService): ?array
     {
-        // Get existing categories to avoid duplicates
-        $existingCategories = Category::pluck('name')->toArray();
-        $existingList = !empty($existingCategories) 
-            ? 'Avoid these existing categories: ' . implode(', ', array_slice($existingCategories, 0, 20))
-            : '';
 
-        $prompt = "Generate a unique, creative fitness/health category name for a social fitness platform. "
-            . "Focus areas: strength training, cardio, yoga, nutrition, weight loss, supplements, "
-            . "wellness, motivation, home workouts, sports performance, mental health, recovery, etc. "
-            . "{$existingList}. "
-            . "Return ONLY a JSON object with this exact format: "
-            . '{"name": "Category Name", "slug": "category-slug"}. '
-            . "Make it specific, engaging, and relevant to fitness/health. "
-            . "The name should be 2-4 words maximum. "
-            . "The slug should be lowercase with hyphens.";
 
         try {
-            $response = $aiService->chat([
-                ['role' => 'user', 'content' => $prompt]
-            ], [
-                'temperature' => 0.9, // Higher creativity
-                'max_tokens' => 150,
-            ]);
+          $response = \App\Ai\Agents\CategoryWriter::make()
+            ->prompt('create a unique category, category name will be in bangla');
 
-            // Extract content from response
-            $responseText = is_array($response) ? ($response['content'] ?? '') : $response;
-            
-            // Clean up HTML
-            $responseText = html_entity_decode(strip_tags($responseText), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-            
-            // Extract JSON
-            if (preg_match('/\{[^}]*"name"[^}]*"slug"[^}]*\}/s', $responseText, $matches)) {
-                $data = json_decode($matches[0], true);
-                
-                if ($data && isset($data['name'], $data['slug'])) {
-                    // Validate and clean
-                    $data['name'] = trim($data['name']);
-                    $data['slug'] = Str::slug($data['slug']);
-                    
-                    // Ensure slug is generated from name if invalid
-                    if (empty($data['slug']) || strlen($data['slug']) < 3) {
-                        $data['slug'] = Str::slug($data['name']);
-                    }
-                    
-                    \Log::info('AI generated category', $data);
-                    return $data;
-                }
-            }
-            
-            \Log::warning('Failed to parse AI category response', [
-                'response' => substr($responseText, 0, 200)
-            ]);
+          if (!$response) {
+            \Log::channel('botbook')->warning('PostWriter returned empty response');
+            return null;
+          }
+
+          // The SDK handles structured output validation based on the schema
+          $structured = $response->structured;
+
+          \Log::channel('botbook')->info('AI generated post content successfully using PostWriter', [
+            'title' => $structured['title'] ?? 'N/A',
+          ]);
+
+          return (array) $structured;
         } catch (\Exception $e) {
             \Log::error('AI category name generation failed', [
                 'error' => $e->getMessage()
@@ -192,11 +159,11 @@ class CategoryGeneratorService
 
         // Extract content from response
         $description = is_array($response) ? ($response['content'] ?? '') : $response;
-        
+
         // Clean up
         $description = html_entity_decode(strip_tags($description), ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $description = trim($description, " \n\r\t\v\0\"'");
-        
+
         // Fallback if too short or empty
         if (strlen($description) < 20) {
             return $theme['description'];
@@ -212,7 +179,7 @@ class CategoryGeneratorService
     {
         $parent = Category::findOrFail($parentId);
         $aiService = AiServiceFactory::make('cerebras');
-        
+
         $prompt = "Generate {$count} specific subcategory names for the fitness category '{$parent->name}'. "
             . "Return ONLY a JSON array of subcategory names. "
             . "Example format: [\"Subcategory 1\", \"Subcategory 2\", \"Subcategory 3\"]. "
@@ -228,17 +195,17 @@ class CategoryGeneratorService
 
             $responseText = is_array($response) ? ($response['content'] ?? '') : $response;
             $responseText = html_entity_decode(strip_tags($responseText), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-            
+
             // Extract JSON
             if (preg_match('/\[.*\]/s', $responseText, $matches)) {
                 $subcategoryNames = json_decode($matches[0], true);
-                
+
                 if (is_array($subcategoryNames)) {
                     $generatedSubcategories = [];
-                    
+
                     foreach ($subcategoryNames as $name) {
                         $slug = Str::slug($name);
-                        
+
                         // Skip if exists
                         if (Category::where('slug', $slug)->exists()) {
                             continue;
@@ -252,7 +219,7 @@ class CategoryGeneratorService
                         ]);
 
                         $generatedSubcategories[] = $subcategory;
-                        
+
                         \Log::info('Subcategory created', [
                             'name' => $subcategory->name,
                             'parent' => $parent->name

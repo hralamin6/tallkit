@@ -28,6 +28,7 @@ class PostWriter implements Agent, Conversational, HasTools, HasStructuredOutput
      */
     public function instructions(): Stringable|string
     {
+
         return "একটি বিস্তারিত এবং আকর্ষণীয় ব্লগ পোস্ট লিখুন। "
             . "শর্তাবলী:\n"
             . "- দৈর্ঘ্য: ১০০-২০০ শব্দ (সংক্ষিপ্ত কিন্তু তথ্যবহুল রাখুন)\n"
@@ -73,6 +74,7 @@ class PostWriter implements Agent, Conversational, HasTools, HasStructuredOutput
             'content' => $schema->string()->required(),
             'excerpt' => $schema->string()->required(),
             'image_prompt' => $schema->string()->required(),
+          'category_id' => $schema->number()->required()
         ];
     }
 }

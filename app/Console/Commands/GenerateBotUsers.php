@@ -38,10 +38,8 @@ class GenerateBotUsers extends Command
 
         for ($i = 0; $i < $count; $i++) {
             try {
-                $botTypes = $botService->getAvailableBotTypes();
-                $botType = $botTypes[array_rand($botTypes)];
 
-                $bot = $botService->generateBotUser($botType);
+                $bot = $botService->generateBotUser();
                 $generatedBots[] = $bot;
 
                 $progressBar->advance();

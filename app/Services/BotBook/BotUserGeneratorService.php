@@ -2,71 +2,25 @@
 
 namespace App\Services\BotBook;
 
+use App\Models\District;
+use App\Models\Division;
+use App\Models\Union;
+use App\Models\Upazila;
 use App\Models\User;
 use App\Models\UserDetail;
-use App\Models\Division;
-use App\Models\District;
-use App\Models\Upazila;
-use App\Models\Union;
 use App\Services\AI\AiServiceFactory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class BotUserGeneratorService
 {
-    private array $botPersonalities = [
-        'dr_fitbot' => [
-            'name_prefix' => 'ডা.',
-            'expertise' => 'চিকিৎসা ও ব্যায়াম বিজ্ঞান',
-            'ai_provider' => 'gemini',
-        ],
-        'coach_thunder' => [
-            'name_prefix' => 'কোচ',
-            'expertise' => 'শক্তি প্রশিক্ষণ ও মোটিভেশন',
-            'ai_provider' => 'groq',
-        ],
-        'zen_yogi' => [
-            'name_prefix' => 'যোগী',
-            'expertise' => 'যোগব্যায়াম ও ধ্যান',
-            'ai_provider' => 'mistral',
-        ],
-        'nutrition_ninja' => [
-            'name_prefix' => 'পুষ্টিবিদ',
-            'expertise' => 'পুষ্টি বিজ্ঞান ও খাদ্য পরিকল্পনা',
-            'ai_provider' => 'cerebras',
-        ],
-        'cardio_queen' => [
-            'name_prefix' => 'কার্ডিও',
-            'expertise' => 'সহনশীলতা প্রশিক্ষণ ও দৌড়',
-            'ai_provider' => 'openrouter',
-        ],
-        'skeptic_sam' => [
-            'name_prefix' => 'বিশ্লেষক',
-            'expertise' => 'ফিটনেস মিথ বাস্টার',
-            'ai_provider' => 'pollinations',
-        ],
-        'beginner_buddy' => [
-            'name_prefix' => 'সহায়ক',
-            'expertise' => 'শুরুর জন্য ফিটনেস',
-            'ai_provider' => 'gemini',
-        ],
-        'biohacker_beta' => [
-            'name_prefix' => 'বায়োহ্যাকার',
-            'expertise' => 'প্রযুক্তি ও অপটিমাইজেশন',
-            'ai_provider' => 'groq',
-        ],
-    ];
-
     /**
      * Generate a single bot user with complete Bangladeshi data
      */
-    public function generateBotUser(string $botType): User
+    public function generateBotUser(): User
     {
-        $personality = $this->botPersonalities[$botType];
-        $aiService = AiServiceFactory::make('nvidia');
-
-        // Generate bot profile using AI
-        $profileData = $this->generateBotProfile($aiService, $personality, $botType);
+        // Generate bot profile using AI agent
+        $profileData = $this->generateBotProfile();
 
         // Get random location data
         $locationData = $this->getRandomBangladeshiLocation();
@@ -74,14 +28,14 @@ class BotUserGeneratorService
         // Create user first to get ID for email
         $user = User::create([
             'name' => $profileData['name'],
-            'email' => 'temp_' . Str::random(10) . '@botbook.local', // Temporary email
+            'email' => 'temp_'.Str::random(10).'@botbook.local', // Temporary email
             'password' => Hash::make('password'), // Random secure password
             'email_verified_at' => now(),
         ]);
 
         // Update email with user ID
         $user->update([
-            'email' => $user->id . '@botbook.local'
+            'email' => $user->id.'@botbook.local',
         ]);
 
         // Create user details
@@ -92,7 +46,7 @@ class BotUserGeneratorService
             'gender' => $profileData['gender'],
             'address' => $profileData['address'],
             'postal_code' => $locationData['postal_code'],
-            'occupation' => $personality['expertise'],
+            'occupation' => 'student',
             'bio' => $profileData['bio'],
             'division_id' => $locationData['division_id'],
             'district_id' => $locationData['district_id'],
@@ -106,21 +60,21 @@ class BotUserGeneratorService
 
         // Generate and attach profile image
         try {
-            $this->generateProfileImage($user, $profileData, $personality);
+            $this->generateProfileImage($user, $profileData);
         } catch (\Exception $e) {
             \Log::warning('Failed to generate profile image for bot', [
                 'user_id' => $user->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
 
         // Generate and attach banner image
         try {
-            $this->generateBannerImage($user, $profileData, $personality);
+            $this->generateBannerImage($user, $profileData);
         } catch (\Exception $e) {
             \Log::warning('Failed to generate banner image for bot', [
                 'user_id' => $user->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
 
@@ -130,23 +84,22 @@ class BotUserGeneratorService
     /**
      * Generate profile image using Pollinations AI
      */
-    private function generateProfileImage(User $user, array $profileData, array $personality): void
+    private function generateProfileImage(User $user, array $profileData): void
     {
         $pollinationsService = AiServiceFactory::make('pollinations');
-        
-        // Create image prompt based on bot personality and gender
+
+        // Create image prompt based on bot profile and gender
         $gender = $profileData['gender'] === 'male' ? 'Bangladeshi man' : 'Bangladeshi woman';
         $ageRange = '30-45 years old';
-        
+
         $prompt = "Professional headshot portrait photo of a {$gender}, {$ageRange}, "
-            . "fitness expert, {$personality['expertise']}, "
-            . "confident smile, professional attire, "
-            . "studio lighting, high quality, realistic, "
-            . "South Asian features, professional photography";
-        
+            .'confident smile, professional attire, '
+            .'studio lighting, high quality, realistic, '
+            .'South Asian features, professional photography';
+
         \Log::info('Generating profile image', [
             'user_id' => $user->id,
-            'prompt' => $prompt
+            'prompt' => $prompt,
         ]);
 
         // Generate image (returns temp file path)
@@ -167,18 +120,18 @@ class BotUserGeneratorService
 
         \Log::info('Profile image generated and attached', [
             'user_id' => $user->id,
-            'name' => $user->name
+            'name' => $user->name,
         ]);
     }
 
     /**
      * Generate banner image using Pollinations AI
      */
-    private function generateBannerImage(User $user, array $profileData, array $personality): void
+    private function generateBannerImage(User $user, array $profileData): void
     {
         $pollinationsService = AiServiceFactory::make('pollinations');
-        
-        // Create banner prompt based on bot personality
+
+        // Create banner prompt based on random themes
         $themes = [
             'modern gym with equipment',
             'yoga studio with natural light',
@@ -187,20 +140,20 @@ class BotUserGeneratorService
             'meditation and wellness space',
             'running track at sunrise',
             'fitness training facility',
-            'health and wellness center'
+            'health and wellness center',
         ];
-        
+
         $theme = $themes[array_rand($themes)];
-        
+
         $prompt = "Professional fitness banner image, {$theme}, "
-            . "vibrant colors, motivational atmosphere, "
-            . "high quality, modern, clean design, "
-            . "wide angle, professional photography, "
-            . "inspiring fitness environment";
-        
+            .'vibrant colors, motivational atmosphere, '
+            .'high quality, modern, clean design, '
+            .'wide angle, professional photography, '
+            .'inspiring fitness environment';
+
         \Log::info('Generating banner image', [
             'user_id' => $user->id,
-            'theme' => $theme
+            'theme' => $theme,
         ]);
 
         // Generate banner image (wider aspect ratio)
@@ -221,78 +174,66 @@ class BotUserGeneratorService
 
         \Log::info('Banner image generated and attached', [
             'user_id' => $user->id,
-            'name' => $user->name
+            'name' => $user->name,
         ]);
     }
 
     /**
      * Generate bot profile data using AI
      */
-    private function generateBotProfile($aiService, array $personality, string $botType): array
+    private function generateBotProfile(): array
     {
-        $prompt = "তুমি একজন বাংলাদেশী  এর প্রোফাইল তৈরি করছো।
-
-বট টাইপ: {$botType}
-দক্ষতা: {$personality['expertise']}
-নাম প্রিফিক্স: {$personality['name_prefix']}
-
-নিচের ফরম্যাটে JSON আকারে তথ্য দাও (শুধুমাত্র JSON, অন্য কিছু না):
-{
-    \"name\": \"সম্পূর্ণ বাংলা নাম\",
-    \"gender\": \"male অথবা female\",
-    \"address\": \"সম্পূর্ণ বাংলা ঠিকানা (গ্রাম/মহল্লা নাম)\",
-    \"bio\": \"150-200 শব্দের বাংলায় পেশাদার বায়ো যেখানে দক্ষতা, অভিজ্ঞতা এবং ফিটনেস দর্শন উল্লেখ থাকবে\"
-}
-
-নিশ্চিত করো:
-- নাম সম্পূর্ণ বাংলায় এবং বাস্তবসম্মত বাংলাদেশী নাম
-- ঠিকানা শুধু গ্রাম/মহল্লার নাম (বিভাগ/জেলা ছাড়া)
-- বায়ো পেশাদার, তথ্যবহুল এবং অনুপ্রেরণামূলক
-- লিঙ্গ অনুযায়ী উপযুক্ত নাম";
+        $prompt = 'একজন বাংলাদেশী ব্যবহারকারীর সম্পূর্ণ প্রোফাইল তৈরি করো। '
+            .'নাম, লিঙ্গ, ঠিকানা এবং একটি বিস্তারিত পেশাদার বায়ো লিখো।';
 
         try {
-            $response = $aiService->chat([
-                ['role' => 'user', 'content' => $prompt]
-            ], [
-                'temperature' => 0.8,
-                'max_tokens' => 800, // Increased to ensure complete bio
-            ]);
+            $response = \App\Ai\Agents\BotUserGenerator::make()
+                ->prompt($prompt);
 
-            // Extract content from response array
-            $responseText = is_array($response) ? ($response['content'] ?? '') : $response;
-            
-            // Strip HTML tags and decode HTML entities (Gemini returns HTML)
-            $responseText = html_entity_decode(strip_tags($responseText), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-            
-            // Extract JSON from response text
-            $jsonMatch = [];
-            if (preg_match('/\{[\s\S]*\}/', $responseText, $jsonMatch)) {
-                $jsonString = trim($jsonMatch[0]);
-                $data = json_decode($jsonString, true);
-                
-                if ($data && isset($data['name'], $data['gender'], $data['address'], $data['bio'])) {
-                    \Log::info('AI generated bot profile successfully', [
-                        'bot_type' => $botType, 
-                        'name' => $data['name'],
-                        'gender' => $data['gender']
-                    ]);
-                    return $data;
-                }
+            if (! $response) {
+                \Log::warning('BotUserGenerator returned empty response');
+
+                return $this->getFallbackProfile();
             }
-            
-            \Log::warning('Failed to parse AI response, using fallback', [
-                'response' => substr($responseText, 0, 300),
-                'bot_type' => $botType
-            ]);
-        } catch (\Exception $e) {
-            \Log::error('Bot profile generation failed: ' . $e->getMessage(), [
-                'bot_type' => $botType,
-                'trace' => $e->getTraceAsString()
-            ]);
-        }
 
-        // Fallback to default data if AI fails
-        return $this->getFallbackProfile($personality, $botType);
+            // The SDK handles structured output validation based on the schema
+            $structured = $response->structured;
+
+            \Log::info('AI generated bot profile successfully using BotUserGenerator', [
+                'name' => $structured['name'] ?? 'N/A',
+            ]);
+
+            return (array) $structured;
+
+        } catch (\Exception $e) {
+            \Log::error('BotUserGenerator generation failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return $this->getFallbackProfile();
+        }
+    }
+
+    /**
+     * Get fallback profile data if AI fails
+     */
+    private function getFallbackProfile(): array
+    {
+        $names = [
+            'male' => ['আব্দুল করিম', 'মোহাম্মদ রহিম', 'আলী আহমেদ', 'সাজেদুল ইসলাম'],
+            'female' => ['ফাতেমা বেগম', 'রুবিনা আক্তার', 'নাজমা খাতুন', 'সাবিনা ইয়াসমিন'],
+        ];
+
+        $gender = rand(0, 1) ? 'male' : 'female';
+        $name = $names[$gender][array_rand($names[$gender])];
+
+        return [
+            'name' => $name,
+            'gender' => $gender,
+            'address' => 'মির্জাপুর গ্রাম',
+            'bio' => 'একজন উৎসাহী এবং প্রতিশ্রুতিবদ্ধ পেশাদার যিনি সমাজের উন্নয়নে কাজ করতে আগ্রহী।',
+        ];
     }
 
     /**
@@ -302,8 +243,8 @@ class BotUserGeneratorService
     {
         // Get random division
         $division = Division::inRandomOrder()->first();
-        
-        if (!$division) {
+
+        if (! $division) {
             throw new \Exception('No divisions found in database. Please seed location data first.');
         }
 
@@ -334,13 +275,6 @@ class BotUserGeneratorService
     /**
      * Generate bot email
      */
-    private function generateBotEmail(string $botType): string
-    {
-        $timestamp = now()->timestamp;
-        $random = Str::random(6);
-        return "{$botType}_{$timestamp}_{$random}@botbook.local";
-    }
-
     /**
      * Generate Bangladeshi phone number
      */
@@ -349,6 +283,7 @@ class BotUserGeneratorService
         $operators = ['013', '014', '015', '016', '017', '018', '019'];
         $operator = $operators[array_rand($operators)];
         $number = rand(10000000, 99999999);
+
         return "{$operator}{$number}";
     }
 
@@ -358,86 +293,34 @@ class BotUserGeneratorService
     private function generateRandomDateOfBirth(): string
     {
         $yearsAgo = rand(25, 55);
+
         return now()->subYears($yearsAgo)->subDays(rand(0, 365))->format('Y-m-d');
     }
 
     /**
-     * Fallback profile data if AI generation fails
-     */
-    private function getFallbackProfile(array $personality, string $botType): array
-    {
-        $maleNames = [
-            'ডা. রহিম উদ্দিন',
-            'কোচ করিম আহমেদ',
-            'যোগী সালাম মিয়া',
-            'পুষ্টিবিদ জাহিদ হাসান',
-            'কার্ডিও রফিক উল্লাহ',
-            'বিশ্লেষক নাসির উদ্দিন',
-            'সহায়ক মাহমুদ হোসেন',
-            'বায়োহ্যাকার ফারুক আহমেদ',
-        ];
-
-        $femaleNames = [
-            'ডা. সাবিনা খাতুন',
-            'কোচ নাজমা আক্তার',
-            'যোগী রুমানা বেগম',
-            'পুষ্টিবিদ ফারহানা ইসলাম',
-            'কার্ডিও শাহিনা পারভীন',
-            'বিশ্লেষক তাসনিম জাহান',
-            'সহায়ক সুমাইয়া রহমান',
-            'বায়োহ্যাকার নুসরাত জাহান',
-        ];
-
-        $addresses = [
-            'শান্তিনগর',
-            'কামালপুর',
-            'রহিমনগর',
-            'আজিমপুর',
-            'নূরপুর',
-            'সাদিকপুর',
-            'মতিনগর',
-            'হাসানপুর',
-        ];
-
-        $gender = rand(0, 1) ? 'male' : 'female';
-        $names = $gender === 'male' ? $maleNames : $femaleNames;
-
-        return [
-            'name' => $names[array_rand($names)],
-            'gender' => $gender,
-            'address' => $addresses[array_rand($addresses)],
-            'bio' => "আমি একজন অভিজ্ঞ {$personality['expertise']} বিশেষজ্ঞ। ১০+ বছরের অভিজ্ঞতা নিয়ে মানুষকে সুস্থ ও ফিট থাকতে সাহায্য করছি। বিজ্ঞানভিত্তিক পদ্ধতি এবং ব্যক্তিগত যত্নে বিশ্বাসী। আমার লক্ষ্য হলো প্রত্যেককে তাদের ফিটনেস লক্ষ্য অর্জনে সহায়তা করা এবং একটি স্বাস্থ্যকর জীবনযাপনে অনুপ্রাণিত করা।",
-        ];
-    }
-
+     * Fallba
     /**
      * Get all available bot types
      */
-    public function getAvailableBotTypes(): array
-    {
-        return array_keys($this->botPersonalities);
-    }
 
     /**
      * Generate multiple bot users
      */
     public function generateMultipleBots(int $count = 5): array
     {
-        $botTypes = $this->getAvailableBotTypes();
         $generatedBots = [];
 
         for ($i = 0; $i < $count; $i++) {
             // Pick a random bot type
-            $botType = $botTypes[array_rand($botTypes)];
-            
+
             try {
-                $bot = $this->generateBotUser($botType);
+                $bot = $this->generateBotUser();
                 $bot->assignRole('user');
                 $generatedBots[] = $bot;
-                
-                \Log::info("Bot user created: {$bot->name} ({$botType})");
+
+                \Log::info("Bot user created: {$bot->name} )");
             } catch (\Exception $e) {
-                \Log::error("Failed to create bot user: " . $e->getMessage());
+                \Log::error('Failed to create bot user: '.$e->getMessage());
             }
 
             // Small delay to avoid rate limiting

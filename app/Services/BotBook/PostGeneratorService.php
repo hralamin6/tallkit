@@ -429,7 +429,7 @@ class PostGeneratorService
         }
 
         // 4. Select appropriate category
-        $category = $this->selectAppropriateCategory($postData['title'], $contentType);
+//        $category = $this->selectAppropriateCategory($postData['title'], $contentType);
 
         // 5. Generate SEO meta fields
         $seoData = $this->generateSEOFields($postData['title'], $postData['excerpt']);
@@ -437,7 +437,7 @@ class PostGeneratorService
         // 6. Create post
         $post = Post::create([
             'user_id' => $botUser->id,
-            'category_id' => $category?->id,
+            'category_id' => $postData['category_id']??1,
             'title' => $postData['title'],
             'slug' => Str::slug($postData['title']) . '-' . Str::random(6),
             'excerpt' => $postData['excerpt'],
@@ -490,6 +490,8 @@ class PostGeneratorService
      */
     private function generatePostContent(array $typeConfig): ?array
     {
+      $existingCategories = Category::pluck('name')->toArray();
+
       $prompt = "
 '{$typeConfig['name_bn']}' ({$typeConfig['name_en']}) ক্যাটাগরির উপর ভিত্তি করে একটি বিস্তারিত, তথ্যবহুল এবং আকর্ষণীয় বাংলা ব্লগ পোস্ট লিখুন।
 
@@ -498,9 +500,40 @@ class PostGeneratorService
 নিচের সাব-ক্যাটাগরিগুলোর মধ্য থেকে যেকোনো একটি **র‌্যান্ডমভাবে নির্বাচন করে** সেই নির্দিষ্ট দৃষ্টিকোণ থেকে পোস্টটি লিখুন:
 " . implode(', ', $typeConfig['sub_categories']) . "।
 
-পোস্টটি যেন নির্বাচিত সাব-ক্যাটাগরিকে কেন্দ্র করে গভীরভাবে আলোচনা করে এবং বাস্তব উদাহরণ, ব্যবহারিক পরামর্শ ও অনুপ্রেরণামূলক দৃষ্টিভঙ্গি অন্তর্ভুক্ত করে।
+---
 
-লেখার ধরন হবে বাস্তবধর্মী, ইতিবাচক ও চিন্তাশীল—যাতে পাঠক জ্ঞান পায়, অনুপ্রাণিত হয় এবং বাস্তবে প্রয়োগ করতে আগ্রহী হয়।
+ক্যাটাগরি নির্বাচন নির্দেশনা:
+
+আপনাকে নিচে প্রদত্ত বিদ্যমান ক্যাটাগরি তালিকা থেকে এই পোস্টের জন্য সবচেয়ে প্রাসঙ্গিক একটি ক্যাটাগরি নির্বাচন করতে হবে।
+
+বিদ্যমান ক্যাটাগরি তালিকা:
+" . implode(', ', $existingCategories) . "
+
+নিয়মাবলি:
+- নতুন কোনো ক্যাটাগরি তৈরি করবেন না।
+- উপরের তালিকা থেকেই নির্বাচন করবেন।
+- category_id অবশ্যই সংখ্যাসূচক হবে।
+- নির্বাচিত category_id কনটেন্টের বিষয়ের সাথে সরাসরি প্রাসঙ্গিক হতে হবে।
+
+---
+
+অতিরিক্ত নির্দেশনা:
+
+- পোস্টের জন্য একটি আকর্ষণীয় শিরোনাম লিখুন।
+- ২–৩ লাইনের সংক্ষিপ্ত সারসংক্ষেপ (excerpt) লিখুন।
+- একটি বাস্তবধর্মী ও বিস্তারিত image generation prompt লিখুন in english (গ্রামীণ/প্রাকৃতিক/স্বয়ংসম্পূর্ণ জীবনধারা ভিত্তিক)।
+
+---
+
+শুধুমাত্র নিচের JSON ফরম্যাটে রেসপন্স রিটার্ন করুন (অন্য কোনো টেক্সট নয়):
+
+{
+  \"title\": \"Post Title\",
+  \"content\": \"Full Blog Content\",
+  \"excerpt\": \"Short Summary\",
+  \"image_prompt\": \"Descriptive image generation prompt relevant to the post\",
+  \"category_id\": number
+}
 ";
 
         try {
