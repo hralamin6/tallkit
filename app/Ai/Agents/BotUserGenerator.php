@@ -3,8 +3,10 @@
 namespace App\Ai\Agents;
 
 use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Laravel\Ai\Attributes\MaxTokens;
 use Laravel\Ai\Attributes\Model;
 use Laravel\Ai\Attributes\Provider;
+use Laravel\Ai\Attributes\Temperature;
 use Laravel\Ai\Contracts\Agent;
 use Laravel\Ai\Contracts\Conversational;
 use Laravel\Ai\Contracts\HasStructuredOutput;
@@ -14,6 +16,9 @@ use Stringable;
 
 #[Provider('custom')]
 #[Model('user')]
+#[MaxTokens(20000)]
+#[Temperature(0.7)]
+
 class BotUserGenerator implements Agent, Conversational, HasStructuredOutput, HasTools
 {
     use Promptable;
@@ -30,9 +35,9 @@ class BotUserGenerator implements Agent, Conversational, HasStructuredOutput, Ha
             ."- ঠিকানা শুধু গ্রাম/মহল্লার নাম (বিভাগ/জেলা ছাড়া)\n"
             ."- বায়ো পেশাদার, তথ্যবহুল এবং অনুপ্রেরণামূলক (150-200 শব্দ)\n"
             ."- লিঙ্গ অনুযায়ী উপযুক্ত নাম\n"
-            ."- gender অবশ্যই 'male' অথবা 'female' হতে হবে\n\n"
+            ."- gender অবশ্যই 'male' হতে হবে\n\n"
             ."শুধুমাত্র এই ফরম্যাটে একটি JSON অবজেক্ট রিটার্ন করুন:\n"
-            .'{"name": "সম্পূর্ণ বাংলা নাম", "gender": "male/female", "address": "গ্রাম/মহল্লা নাম", "bio": "পেশাদার বায়ো"}';
+            .'{"name": "সম্পূর্ণ বাংলা নাম", "gender": "male", "address": "গ্রাম/মহল্লা নাম", "bio": "পেশাদার বায়ো"}';
     }
 
     /**

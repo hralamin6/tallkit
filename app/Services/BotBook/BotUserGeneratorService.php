@@ -299,7 +299,6 @@ class BotUserGeneratorService
 
     /**
      * Fallba
-    /**
      * Get all available bot types
      */
 

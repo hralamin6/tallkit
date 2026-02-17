@@ -437,7 +437,7 @@ class PostGeneratorService
         // 6. Create post
         $post = Post::create([
             'user_id' => $botUser->id,
-            'category_id' => $postData['category_id']??1,
+            'category_id' => $postData['category_id'],
             'title' => $postData['title'],
             'slug' => Str::slug($postData['title']) . '-' . Str::random(6),
             'excerpt' => $postData['excerpt'],
@@ -490,7 +490,8 @@ class PostGeneratorService
      */
     private function generatePostContent(array $typeConfig): ?array
     {
-      $existingCategories = Category::pluck('name')->toArray();
+      $existingCategories = Category::active()->get(['id', 'name']);
+      $categoriesList = $existingCategories->map(fn($cat) => "{$cat->name} (ID: {$cat->id})")->implode(', ');
 
       $prompt = "
 '{$typeConfig['name_bn']}' ({$typeConfig['name_en']}) ক্যাটাগরির উপর ভিত্তি করে একটি বিস্তারিত, তথ্যবহুল এবং আকর্ষণীয় বাংলা ব্লগ পোস্ট লিখুন।
@@ -507,7 +508,7 @@ class PostGeneratorService
 আপনাকে নিচে প্রদত্ত বিদ্যমান ক্যাটাগরি তালিকা থেকে এই পোস্টের জন্য সবচেয়ে প্রাসঙ্গিক একটি ক্যাটাগরি নির্বাচন করতে হবে।
 
 বিদ্যমান ক্যাটাগরি তালিকা:
-" . implode(', ', $existingCategories) . "
+" . $categoriesList . "
 
 নিয়মাবলি:
 - নতুন কোনো ক্যাটাগরি তৈরি করবেন না।
@@ -664,7 +665,7 @@ class PostGeneratorService
         $imagePath = $pollinationsService->generateImage($prompt, [
             'width' => 1200,
             'height' => 630, // Standard OG image size
-            'model' => 'flux',
+            'model' => 'imagen-4',
         ]);
 
         // Add to media library
