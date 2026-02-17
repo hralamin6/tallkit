@@ -95,7 +95,7 @@ return [
             'url' => env('NVIDIA_BASE_URL', 'https://integrate.api.nvidia.com/v1'),
         ],
         'custom' => [
-            'driver' => 'groq',
+            'driver' => 'xai',
             'key' => env('CUSTOM_API_KEY'),
             'url' => env('CUSTOM_BASE_URL', 'http://139.59.25.41:20128/v1'),
         ],

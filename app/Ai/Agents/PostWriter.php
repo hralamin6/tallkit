@@ -14,8 +14,8 @@ use Laravel\Ai\Contracts\HasStructuredOutput;
 use Laravel\Ai\Contracts\HasTools;
 use Laravel\Ai\Promptable;
 use Stringable;
-#[Provider('custom')] 
-#[Model('cx/gpt-5.3-codex')]
+#[Provider('custom')]
+#[Model('post')]
 // #[UseCheapestModel]
 // #[MaxTokens(20000)]
 // #[Temperature(0.7)]
@@ -49,7 +49,7 @@ class PostWriter implements Agent, Conversational, HasTools, HasStructuredOutput
     public function messages(): iterable
     {
         return [
-        
+
         ];
     }
 

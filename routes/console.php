@@ -44,9 +44,9 @@ use Illuminate\Support\Facades\Artisan;
 Artisan::command('botbook:daily-bots', function () {
     $this->info('🤖 Starting daily bot user generation...');
     \Log::channel('botbook')->info('🤖 Starting daily bot user generation...');
-    
+
     Artisan::call('botbook:generate-users', ['count' => 1]);
-    
+
     $this->info('✅ Daily bot generation completed!');
     \Log::channel('botbook')->info('✅ Daily bot generation completed!');
 })->purpose('Generate 5 AI bot users daily with Bangladeshi profiles')->hourly()->appendOutputTo('/dev/stdout');
@@ -55,20 +55,14 @@ Artisan::command('botbook:daily-bots', function () {
 Artisan::command('botbook:weekly-categories', function () {
     $this->info('🏷️  Starting weekly category generation...');
     \Log::channel('botbook')->info('🏷️  Starting weekly category generation...');
-    
+
     Artisan::call('botbook:generate-categories', ['count' => 1]);
-    
+
     $this->info('✅ Weekly category generation completed!');
     \Log::channel('botbook')->info('✅ Weekly category generation completed!');
 })->purpose('Generate AI-powered fitness/health categories weekly')->everyThirtyMinutes()->appendOutputTo('/dev/stdout');
 
 // BotBook: Generate AI blog posts hourly
 Artisan::command('botbook:hourly-posts', function () {
-    $this->info('📝 Starting hourly blog post generation...');
-    \Log::channel('botbook')->info('📝 Starting hourly blog post generation...');
-    
     Artisan::call('botbook:generate-posts', ['count' => 1]);
-    
-    $this->info('✅ Hourly post generation completed!');
-    \Log::channel('botbook')->info('✅ Hourly post generation completed!');
-})->purpose('Generate 5 AI-powered blog posts every hour')->everyTenMinutes()->appendOutputTo('/dev/stderr');
+})->purpose('Generate 5 AI-powered blog posts every hour')->everyTwoMinutes();
