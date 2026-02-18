@@ -5,6 +5,7 @@ namespace App\Services\BotBook;
 use App\Models\Category;
 use App\Services\AI\AiServiceFactory;
 use Illuminate\Support\Str;
+use Laravel\Ai\Responses\StructuredAgentResponse;
 
 class CategoryGeneratorService
 {
@@ -67,21 +68,19 @@ class CategoryGeneratorService
                 // Generate unique category name using AI
                 $categoryData = $this->generateCategoryWithAI($aiService);
 
-                if (!$categoryData) {
-                    \Log::warning('AI category generation returned empty data');
-                    continue;
-                }
-
                 // Check if category already exists
-                if (Category::where('slug', $categoryData['slug'])->exists()) {
-                    \Log::info('Category already exists, skipping', ['name' => $categoryData['name']]);
+                if (Category::where('slug', $categoryData->structured['slug'])->exists()) {
+                    \Log::info('Category already exists, skipping', [
+                        'name' => $categoryData->structured['name'],
+                    ]);
+
                     continue;
                 }
 
                 // Create category
                 $category = Category::create([
-                    'name' => $categoryData['name'],
-                    'slug' => $categoryData['slug'],
+                    'name' => $categoryData->structured['name'],
+                    'slug' => $categoryData->structured['slug'],
                     'parent_id' => null,
                     'is_active' => true,
                 ]);
@@ -90,7 +89,7 @@ class CategoryGeneratorService
 
                 \Log::info('Category created', [
                     'name' => $category->name,
-                    'slug' => $category->slug
+                    'slug' => $category->slug,
                 ]);
 
                 // Small delay to avoid rate limiting
@@ -98,7 +97,7 @@ class CategoryGeneratorService
             } catch (\Exception $e) {
                 \Log::error('Category generation failed', [
                     'iteration' => $i,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ]);
             }
         }
@@ -109,34 +108,21 @@ class CategoryGeneratorService
     /**
      * Generate category name and slug using AI
      */
-    private function generateCategoryWithAI($aiService): ?array
+    private function generateCategoryWithAI($aiService): StructuredAgentResponse
     {
-
-
-        try {
-          $response = \App\Ai\Agents\CategoryWriter::make()
+        $response = \App\Ai\Agents\CategoryWriter::make()
             ->prompt('create a unique category, category name will be in bangla');
 
-          if (!$response) {
-            \Log::channel('botbook')->warning('PostWriter returned empty response');
-            return null;
-          }
-
-          // The SDK handles structured output validation based on the schema
-          $structured = $response->structured;
-
-          \Log::channel('botbook')->info('AI generated post content successfully using PostWriter', [
-            'title' => $structured['title'] ?? 'N/A',
-          ]);
-
-          return (array) $structured;
-        } catch (\Exception $e) {
-            \Log::error('AI category name generation failed', [
-                'error' => $e->getMessage()
-            ]);
+        if (! $response) {
+            \Log::error('CategoryWriter returned empty response');
+            throw new \RuntimeException('Failed to generate category: AI returned empty response');
         }
 
-        return null;
+        \Log::info('AI generated category successfully using CategoryWriter', [
+            'name' => $response->structured['name'] ?? 'N/A',
+        ]);
+
+        return $response;
     }
 
     /**
@@ -145,13 +131,13 @@ class CategoryGeneratorService
     private function generateDescription($aiService, array $theme): string
     {
         $prompt = "Write a compelling 1-2 sentence description for a fitness/health category called '{$theme['name']}'. "
-            . "Focus: {$theme['description']}. "
-            . "Make it engaging, informative, and motivational. "
-            . "Keep it under 150 characters. "
-            . "Return ONLY the description text, no quotes or extra formatting.";
+            ."Focus: {$theme['description']}. "
+            .'Make it engaging, informative, and motivational. '
+            .'Keep it under 150 characters. '
+            .'Return ONLY the description text, no quotes or extra formatting.';
 
         $response = $aiService->chat([
-            ['role' => 'user', 'content' => $prompt]
+            ['role' => 'user', 'content' => $prompt],
         ], [
             'temperature' => 0.7,
             'max_tokens' => 100,
@@ -181,13 +167,13 @@ class CategoryGeneratorService
         $aiService = AiServiceFactory::make('cerebras');
 
         $prompt = "Generate {$count} specific subcategory names for the fitness category '{$parent->name}'. "
-            . "Return ONLY a JSON array of subcategory names. "
-            . "Example format: [\"Subcategory 1\", \"Subcategory 2\", \"Subcategory 3\"]. "
-            . "Make them specific, relevant, and practical.";
+            .'Return ONLY a JSON array of subcategory names. '
+            .'Example format: ["Subcategory 1", "Subcategory 2", "Subcategory 3"]. '
+            .'Make them specific, relevant, and practical.';
 
         try {
             $response = $aiService->chat([
-                ['role' => 'user', 'content' => $prompt]
+                ['role' => 'user', 'content' => $prompt],
             ], [
                 'temperature' => 0.8,
                 'max_tokens' => 200,
@@ -222,7 +208,7 @@ class CategoryGeneratorService
 
                         \Log::info('Subcategory created', [
                             'name' => $subcategory->name,
-                            'parent' => $parent->name
+                            'parent' => $parent->name,
                         ]);
                     }
 
@@ -232,7 +218,7 @@ class CategoryGeneratorService
         } catch (\Exception $e) {
             \Log::error('Subcategory generation failed', [
                 'parent_id' => $parentId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
 

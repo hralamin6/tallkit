@@ -67,7 +67,6 @@ return [
             'key' => env('MISTRAL_API_KEY'),
         ],
 
-
         'openrouter' => [
             'driver' => 'openrouter',
             'key' => env('OPENROUTER_API_KEY'),
@@ -77,7 +76,6 @@ return [
             'key' => env('POLLINATIONS_API_KEY'),
             'url' => 'https://gen.pollinations.ai/v1',
         ],
-
 
         'cerebras' => [
             'driver' => 'groq',
@@ -95,11 +93,10 @@ return [
             'url' => env('NVIDIA_BASE_URL', 'https://integrate.api.nvidia.com/v1'),
         ],
         'custom' => [
-            'driver' => 'xai',
+            'driver' => 'groq',
             'key' => env('CUSTOM_API_KEY'),
             'url' => env('CUSTOM_BASE_URL', 'http://139.59.25.41:20128/v1'),
         ],
-
 
     ],
 

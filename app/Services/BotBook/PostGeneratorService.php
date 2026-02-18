@@ -6,367 +6,365 @@ use App\Models\Category;
 use App\Models\Post;
 use App\Models\User;
 use App\Services\AI\AiServiceFactory;
-use App\Services\BotBook\StructuredResponse;
 use Illuminate\Support\Str;
+use Laravel\Ai\Responses\StructuredAgentResponse;
 
 class PostGeneratorService
 {
     /**
      * Post content types with their characteristics
      */
-    private array $contentTypes  = [
-
-    'rural_lifestyle' => [
-        'name_bn' => 'গ্রামীণ জীবনধারা',
-        'name_en' => 'Rural Lifestyle',
-        'sub_categories' => ['Village Living', 'Slow Life', 'Community Culture']
-    ],
-
-    'self_sufficiency' => [
-        'name_bn' => 'স্বয়ংসম্পূর্ণতা',
-        'name_en' => 'Self Sufficiency',
-        'sub_categories' => ['Food Independence', 'Energy Independence', 'DIY Skills']
-    ],
-
-    'self_reliant_family' => [
-        'name_bn' => 'আত্মনির্ভরশীল পরিবার',
-        'name_en' => 'Self Reliant Family',
-        'sub_categories' => ['Family Farming', 'Home Skills', 'Family Economy']
-    ],
-
-    'homesteading_basics' => [
-        'name_bn' => 'হোমস্টেডিং বেসিকস',
-        'name_en' => 'Homesteading Basics',
-        'sub_categories' => ['Land Setup', 'Animal Care', 'Food Preservation']
-    ],
-
-    'off_grid_living' => [
-        'name_bn' => 'অফ-গ্রিড জীবনযাপন',
-        'name_en' => 'Off Grid Living',
-        'sub_categories' => ['Solar Power', 'Water Systems', 'Remote Living']
-    ],
-
-    'urban_vs_rural' => [
-        'name_bn' => 'শহর বনাম গ্রাম',
-        'name_en' => 'Urban vs Rural',
-        'sub_categories' => ['Cost of Living', 'Lifestyle Health', 'Freedom Comparison']
-    ],
-
-    'natural_living' => [
-        'name_bn' => 'প্রাকৃতিক জীবন',
-        'name_en' => 'Natural Living',
-        'sub_categories' => ['Nature Connection', 'Sunlight Health', 'Barefoot Living']
-    ],
-
-    'sustainable_living' => [
-        'name_bn' => 'টেকসই বসবাস',
-        'name_en' => 'Sustainable Living',
-        'sub_categories' => ['Low Waste', 'Eco Practices', 'Green Habits']
-    ],
-
-    'minimal_consumption' => [
-        'name_bn' => 'কম ভোগে স্বাধীনতা',
-        'name_en' => 'Freedom Through Minimal Consumption',
-        'sub_categories' => ['Minimal Needs', 'Simple Living', 'Debt Free Life']
-    ],
-
-    'grow_your_food' => [
-        'name_bn' => 'নিজের খাবার নিজে উৎপাদন',
-        'name_en' => 'Grow Your Own Food',
-        'sub_categories' => ['Home Gardening', 'Seasonal Crops', 'Seed Saving']
-    ],
-
-    // Captain Green Mindset
-
-    'captain_green_mindset' => [
-        'name_bn' => 'ক্যাপ্টেন গ্রিন মাইন্ডসেট',
-        'name_en' => 'Captain Green Mindset',
-        'sub_categories' => ['Mission Living', 'Discipline Code', 'Purpose Focus']
-    ],
-
-    'personal_discipline' => [
-        'name_bn' => 'ব্যক্তিগত শৃঙ্খলা',
-        'name_en' => 'Personal Discipline',
-        'sub_categories' => ['Habit Building', 'Self Control', 'Consistency']
-    ],
-
-    'daily_routine_design' => [
-        'name_bn' => 'দৈনিক রুটিন ডিজাইন',
-        'name_en' => 'Daily Routine Design',
-        'sub_categories' => ['Morning Routine', 'Night Routine', 'Time Blocking']
-    ],
-
-    'leadership_development' => [
-        'name_bn' => 'নেতৃত্বগুণ উন্নয়ন',
-        'name_en' => 'Leadership Development',
-        'sub_categories' => ['Decision Making', 'Team Guidance', 'Responsibility']
-    ],
-
-    'mental_resilience' => [
-        'name_bn' => 'মানসিক দৃঢ়তা',
-        'name_en' => 'Mental Resilience',
-        'sub_categories' => ['Stress Control', 'Focus Training', 'Hardship Endurance']
-    ],
-
-    // Animal Based Nutrition
-
-    'animal_based_nutrition' => [
-        'name_bn' => 'প্রাণীজ পুষ্টি',
-        'name_en' => 'Animal Based Nutrition',
-        'sub_categories' => ['Meat Diet', 'Fat Nutrition', 'Protein Health']
-    ],
-
-    'animal_protein' => [
-        'name_bn' => 'প্রাণীজ প্রোটিন',
-        'name_en' => 'Animal Protein',
-        'sub_categories' => ['Beef Protein', 'Egg Protein', 'Fish Protein']
-    ],
-
-    'healthy_fats' => [
-        'name_bn' => 'স্বাস্থ্যকর চর্বি',
-        'name_en' => 'Healthy Fats',
-        'sub_categories' => ['Saturated Fat', 'Animal Fat', 'Cooking Fat']
-    ],
-
-    'red_meat_nutrition' => [
-        'name_bn' => 'রেড মিট পুষ্টি',
-        'name_en' => 'Red Meat Nutrition',
-        'sub_categories' => ['Iron Source', 'B12 Source', 'Strength Food']
-    ],
-
-    'bone_broth' => [
-        'name_bn' => 'হাড়ের স্যুপ',
-        'name_en' => 'Bone Broth',
-        'sub_categories' => ['Collagen', 'Joint Health', 'Gut Repair']
-    ],
-
-    // Plant Toxin Awareness
-
-    'plant_defense_chemicals' => [
-        'name_bn' => 'উদ্ভিদের প্রাকৃতিক প্রতিরক্ষা',
-        'name_en' => 'Plant Defense Chemicals',
-        'sub_categories' => ['Natural Toxins', 'Plant Survival', 'Food Sensitivity']
-    ],
-
-    'lectin_awareness' => [
-        'name_bn' => 'লেক্টিন সচেতনতা',
-        'name_en' => 'Lectin Awareness',
-        'sub_categories' => ['Beans Lectins', 'Soaking Methods', 'Digestive Impact']
-    ],
-
-    'oxalate_effects' => [
-        'name_bn' => 'অক্সালেট প্রভাব',
-        'name_en' => 'Oxalate Effects',
-        'sub_categories' => ['Kidney Stones', 'Leafy Greens', 'Mineral Binding']
-    ],
-
-    'gluten_sensitivity' => [
-        'name_bn' => 'গ্লুটেন সংবেদনশীলতা',
-        'name_en' => 'Gluten Sensitivity',
-        'sub_categories' => ['Wheat Issues', 'Gut Inflammation', 'Alternatives']
-    ],
-
-    'gut_health' => [
-        'name_bn' => 'গাট হেলথ',
-        'name_en' => 'Gut Health',
-        'sub_categories' => ['Microbiome', 'Digestion', 'Food Reactions']
-    ],
-
-    // Fermentation
-
-    'fermentation_basics' => [
-        'name_bn' => 'ফারমেন্টেশন বেসিকস',
-        'name_en' => 'Fermentation Basics',
-        'sub_categories' => ['Starter Culture', 'Salt Ratio', 'Anaerobic Process']
-    ],
-
-    'kefir_culture' => [
-        'name_bn' => 'কেফির',
-        'name_en' => 'Kefir Culture',
-        'sub_categories' => ['Milk Kefir', 'Water Kefir', 'Probiotic Drink']
-    ],
-
-    'pickle_science' => [
-        'name_bn' => 'আচারের বিজ্ঞান',
-        'name_en' => 'Pickle Science',
-        'sub_categories' => ['Lacto Pickle', 'Oil Pickle', 'Shelf Life']
-    ],
-
-    'sprouting_grains' => [
-        'name_bn' => 'অঙ্কুরোদগম',
-        'name_en' => 'Sprouting Grains',
-        'sub_categories' => ['Enzyme Boost', 'Soaking', 'Digestibility']
-    ],
-
-    'probiotic_foods' => [
-        'name_bn' => 'প্রোবায়োটিক খাবার',
-        'name_en' => 'Probiotic Foods',
-        'sub_categories' => ['Fermented Dairy', 'Fermented Veg', 'Gut Flora']
-    ],
-
-    // Regenerative Agro
-
-    'regenerative_agriculture' => [
-        'name_bn' => 'রিজেনারেটিভ কৃষি',
-        'name_en' => 'Regenerative Agriculture',
-        'sub_categories' => ['Soil Revival', 'Carbon Sequestration', 'Natural Farming']
-    ],
-
-    'nitrogen_fixation' => [
-        'name_bn' => 'নাইট্রোজেন ফিক্সেশন',
-        'name_en' => 'Nitrogen Fixation',
-        'sub_categories' => ['Legumes', 'Soil Fertility', 'Root Bacteria']
-    ],
-
-    'soil_fertility' => [
-        'name_bn' => 'মাটির উর্বরতা',
-        'name_en' => 'Soil Fertility',
-        'sub_categories' => ['Compost', 'Microbes', 'Organic Matter']
-    ],
-
-    'local_crops' => [
-        'name_bn' => 'লোকাল ফসল',
-        'name_en' => 'Local Crops',
-        'sub_categories' => ['Indigenous Seeds', 'Climate Crops', 'Food Security']
-    ],
-
-    'specialty_grains' => [
-        'name_bn' => 'বিশেষ শস্য',
-        'name_en' => 'Specialty Grains',
-        'sub_categories' => ['Ancient Grains', 'Millets', 'Rare Pulses']
-    ],
-
-    // Ethical Products
-
-    'clean_food' => [
-        'name_bn' => 'ক্লিন ফুড',
-        'name_en' => 'Clean Food',
-        'sub_categories' => ['Chemical Free', 'Traceable Food', 'Whole Food']
-    ],
-
-    'safe_food_supply' => [
-        'name_bn' => 'নিরাপদ খাবার',
-        'name_en' => 'Safe Food Supply',
-        'sub_categories' => ['Testing', 'Storage', 'Handling']
-    ],
-
-    'ethical_business' => [
-        'name_bn' => 'নৈতিক ব্যবসা',
-        'name_en' => 'Ethical Business',
-        'sub_categories' => ['Fair Trade', 'Farmer Support', 'Transparency']
-    ],
-
-    'mustard_oil_purity' => [
-        'name_bn' => 'সরিষার তেল',
-        'name_en' => 'Mustard Oil Purity',
-        'sub_categories' => ['Cold Pressed', 'Adulteration Check', 'Omega Profile']
-    ],
-
-    'farm_to_city' => [
-        'name_bn' => 'ফার্ম টু সিটি',
-        'name_en' => 'Farm to City Supply',
-        'sub_categories' => ['Direct Sourcing', 'Logistics', 'Fresh Delivery']
-    ],
-
-    // Prepping & Survival
-
-    'survivalism' => [
-        'name_bn' => 'সারভাইভালিজম',
-        'name_en' => 'Survivalism',
-        'sub_categories' => ['Bushcraft', 'Emergency Skills', 'Wilderness Survival']
-    ],
-
-    'prepping_strategy' => [
-        'name_bn' => 'প্রিপিং',
-        'name_en' => 'Prepping Strategy',
-        'sub_categories' => ['Stockpiling', 'Risk Planning', 'Backup Systems']
-    ],
-
-    'crisis_preparedness' => [
-        'name_bn' => 'সংকট প্রস্তুতি',
-        'name_en' => 'Crisis Preparedness',
-        'sub_categories' => ['Disaster Plan', 'Family Safety', 'Evacuation']
-    ],
-
-    'food_storage' => [
-        'name_bn' => 'খাবার মজুদ',
-        'name_en' => 'Food Storage',
-        'sub_categories' => ['Dry Storage', 'Canning', 'Fermented Storage']
-    ],
-
-    'off_grid_skills' => [
-        'name_bn' => 'অফ-গ্রিড দক্ষতা',
-        'name_en' => 'Off Grid Skills',
-        'sub_categories' => ['Fire Making', 'Water Filtering', 'Shelter Build']
-    ],
-
-    // Eco Lifestyle
-
-    'eco_lifestyle' => [
-        'name_bn' => 'পরিবেশবান্ধব জীবনযাপন',
-        'name_en' => 'Eco Lifestyle',
-        'sub_categories' => ['Low Carbon', 'Eco Habits', 'Green Living']
-    ],
-
-    'ceb_housing' => [
-        'name_bn' => 'CEB ঘর নির্মাণ',
-        'name_en' => 'CEB Housing',
-        'sub_categories' => ['Compressed Earth Block', 'Thermal Comfort', 'Low Cost Build']
-    ],
-
-    'eco_housing' => [
-        'name_bn' => 'ইকো হাউসিং',
-        'name_en' => 'Eco Housing',
-        'sub_categories' => ['Natural Materials', 'Passive Cooling', 'Green Design']
-    ],
-
-    'grounding_practice' => [
-        'name_bn' => 'গ্রাউন্ডিং',
-        'name_en' => 'Grounding Practice',
-        'sub_categories' => ['Barefoot Walking', 'Earth Contact', 'Inflammation Relief']
-    ],
-
-    'solar_homestead' => [
-        'name_bn' => 'সোলার হোম',
-        'name_en' => 'Solar Homestead',
-        'sub_categories' => ['Panels', 'Battery Bank', 'Energy Backup']
-    ],
-
-    // Anti-Consumerism
-
-    'anti_consumerism' => [
-        'name_bn' => 'ভোক্তাবাদ বিরোধীতা',
-        'name_en' => 'Anti Consumerism',
-        'sub_categories' => ['Mindful Buying', 'Need vs Want', 'Simple Economy']
-    ],
-
-    'cheap_food_trap' => [
-        'name_bn' => 'সস্তা খাবারের ফাঁদ',
-        'name_en' => 'Cheap Food Trap',
-        'sub_categories' => ['Ultra Processed', 'Hidden Chemicals', 'Health Cost']
-    ],
-
-    'fake_development' => [
-        'name_bn' => 'ফেইক উন্নয়ন',
-        'name_en' => 'Fake Development',
-        'sub_categories' => ['Urban Illusion', 'GDP Myth', 'Lifestyle Disease']
-    ],
-
-    'real_development' => [
-        'name_bn' => 'বাস্তব উন্নয়ন',
-        'name_en' => 'Real Development',
-        'sub_categories' => ['Food Security', 'Soil Health', 'Community Wealth']
-    ],
-
-    'conscious_living' => [
-        'name_bn' => 'সচেতন জীবনযাপন',
-        'name_en' => 'Conscious Living',
-        'sub_categories' => ['Intentional Life', 'Value Based Living', 'Awareness']
-    ],
-
-];
-
-
+    private array $contentTypes = [
+
+        'rural_lifestyle' => [
+            'name_bn' => 'গ্রামীণ জীবনধারা',
+            'name_en' => 'Rural Lifestyle',
+            'sub_categories' => ['Village Living', 'Slow Life', 'Community Culture'],
+        ],
+
+        'self_sufficiency' => [
+            'name_bn' => 'স্বয়ংসম্পূর্ণতা',
+            'name_en' => 'Self Sufficiency',
+            'sub_categories' => ['Food Independence', 'Energy Independence', 'DIY Skills'],
+        ],
+
+        'self_reliant_family' => [
+            'name_bn' => 'আত্মনির্ভরশীল পরিবার',
+            'name_en' => 'Self Reliant Family',
+            'sub_categories' => ['Family Farming', 'Home Skills', 'Family Economy'],
+        ],
+
+        'homesteading_basics' => [
+            'name_bn' => 'হোমস্টেডিং বেসিকস',
+            'name_en' => 'Homesteading Basics',
+            'sub_categories' => ['Land Setup', 'Animal Care', 'Food Preservation'],
+        ],
+
+        'off_grid_living' => [
+            'name_bn' => 'অফ-গ্রিড জীবনযাপন',
+            'name_en' => 'Off Grid Living',
+            'sub_categories' => ['Solar Power', 'Water Systems', 'Remote Living'],
+        ],
+
+        'urban_vs_rural' => [
+            'name_bn' => 'শহর বনাম গ্রাম',
+            'name_en' => 'Urban vs Rural',
+            'sub_categories' => ['Cost of Living', 'Lifestyle Health', 'Freedom Comparison'],
+        ],
+
+        'natural_living' => [
+            'name_bn' => 'প্রাকৃতিক জীবন',
+            'name_en' => 'Natural Living',
+            'sub_categories' => ['Nature Connection', 'Sunlight Health', 'Barefoot Living'],
+        ],
+
+        'sustainable_living' => [
+            'name_bn' => 'টেকসই বসবাস',
+            'name_en' => 'Sustainable Living',
+            'sub_categories' => ['Low Waste', 'Eco Practices', 'Green Habits'],
+        ],
+
+        'minimal_consumption' => [
+            'name_bn' => 'কম ভোগে স্বাধীনতা',
+            'name_en' => 'Freedom Through Minimal Consumption',
+            'sub_categories' => ['Minimal Needs', 'Simple Living', 'Debt Free Life'],
+        ],
+
+        'grow_your_food' => [
+            'name_bn' => 'নিজের খাবার নিজে উৎপাদন',
+            'name_en' => 'Grow Your Own Food',
+            'sub_categories' => ['Home Gardening', 'Seasonal Crops', 'Seed Saving'],
+        ],
+
+        // Captain Green Mindset
+
+        'captain_green_mindset' => [
+            'name_bn' => 'ক্যাপ্টেন গ্রিন মাইন্ডসেট',
+            'name_en' => 'Captain Green Mindset',
+            'sub_categories' => ['Mission Living', 'Discipline Code', 'Purpose Focus'],
+        ],
+
+        'personal_discipline' => [
+            'name_bn' => 'ব্যক্তিগত শৃঙ্খলা',
+            'name_en' => 'Personal Discipline',
+            'sub_categories' => ['Habit Building', 'Self Control', 'Consistency'],
+        ],
+
+        'daily_routine_design' => [
+            'name_bn' => 'দৈনিক রুটিন ডিজাইন',
+            'name_en' => 'Daily Routine Design',
+            'sub_categories' => ['Morning Routine', 'Night Routine', 'Time Blocking'],
+        ],
+
+        'leadership_development' => [
+            'name_bn' => 'নেতৃত্বগুণ উন্নয়ন',
+            'name_en' => 'Leadership Development',
+            'sub_categories' => ['Decision Making', 'Team Guidance', 'Responsibility'],
+        ],
+
+        'mental_resilience' => [
+            'name_bn' => 'মানসিক দৃঢ়তা',
+            'name_en' => 'Mental Resilience',
+            'sub_categories' => ['Stress Control', 'Focus Training', 'Hardship Endurance'],
+        ],
+
+        // Animal Based Nutrition
+
+        'animal_based_nutrition' => [
+            'name_bn' => 'প্রাণীজ পুষ্টি',
+            'name_en' => 'Animal Based Nutrition',
+            'sub_categories' => ['Meat Diet', 'Fat Nutrition', 'Protein Health'],
+        ],
+
+        'animal_protein' => [
+            'name_bn' => 'প্রাণীজ প্রোটিন',
+            'name_en' => 'Animal Protein',
+            'sub_categories' => ['Beef Protein', 'Egg Protein', 'Fish Protein'],
+        ],
+
+        'healthy_fats' => [
+            'name_bn' => 'স্বাস্থ্যকর চর্বি',
+            'name_en' => 'Healthy Fats',
+            'sub_categories' => ['Saturated Fat', 'Animal Fat', 'Cooking Fat'],
+        ],
+
+        'red_meat_nutrition' => [
+            'name_bn' => 'রেড মিট পুষ্টি',
+            'name_en' => 'Red Meat Nutrition',
+            'sub_categories' => ['Iron Source', 'B12 Source', 'Strength Food'],
+        ],
+
+        'bone_broth' => [
+            'name_bn' => 'হাড়ের স্যুপ',
+            'name_en' => 'Bone Broth',
+            'sub_categories' => ['Collagen', 'Joint Health', 'Gut Repair'],
+        ],
+
+        // Plant Toxin Awareness
+
+        'plant_defense_chemicals' => [
+            'name_bn' => 'উদ্ভিদের প্রাকৃতিক প্রতিরক্ষা',
+            'name_en' => 'Plant Defense Chemicals',
+            'sub_categories' => ['Natural Toxins', 'Plant Survival', 'Food Sensitivity'],
+        ],
+
+        'lectin_awareness' => [
+            'name_bn' => 'লেক্টিন সচেতনতা',
+            'name_en' => 'Lectin Awareness',
+            'sub_categories' => ['Beans Lectins', 'Soaking Methods', 'Digestive Impact'],
+        ],
+
+        'oxalate_effects' => [
+            'name_bn' => 'অক্সালেট প্রভাব',
+            'name_en' => 'Oxalate Effects',
+            'sub_categories' => ['Kidney Stones', 'Leafy Greens', 'Mineral Binding'],
+        ],
+
+        'gluten_sensitivity' => [
+            'name_bn' => 'গ্লুটেন সংবেদনশীলতা',
+            'name_en' => 'Gluten Sensitivity',
+            'sub_categories' => ['Wheat Issues', 'Gut Inflammation', 'Alternatives'],
+        ],
+
+        'gut_health' => [
+            'name_bn' => 'গাট হেলথ',
+            'name_en' => 'Gut Health',
+            'sub_categories' => ['Microbiome', 'Digestion', 'Food Reactions'],
+        ],
+
+        // Fermentation
+
+        'fermentation_basics' => [
+            'name_bn' => 'ফারমেন্টেশন বেসিকস',
+            'name_en' => 'Fermentation Basics',
+            'sub_categories' => ['Starter Culture', 'Salt Ratio', 'Anaerobic Process'],
+        ],
+
+        'kefir_culture' => [
+            'name_bn' => 'কেফির',
+            'name_en' => 'Kefir Culture',
+            'sub_categories' => ['Milk Kefir', 'Water Kefir', 'Probiotic Drink'],
+        ],
+
+        'pickle_science' => [
+            'name_bn' => 'আচারের বিজ্ঞান',
+            'name_en' => 'Pickle Science',
+            'sub_categories' => ['Lacto Pickle', 'Oil Pickle', 'Shelf Life'],
+        ],
+
+        'sprouting_grains' => [
+            'name_bn' => 'অঙ্কুরোদগম',
+            'name_en' => 'Sprouting Grains',
+            'sub_categories' => ['Enzyme Boost', 'Soaking', 'Digestibility'],
+        ],
+
+        'probiotic_foods' => [
+            'name_bn' => 'প্রোবায়োটিক খাবার',
+            'name_en' => 'Probiotic Foods',
+            'sub_categories' => ['Fermented Dairy', 'Fermented Veg', 'Gut Flora'],
+        ],
+
+        // Regenerative Agro
+
+        'regenerative_agriculture' => [
+            'name_bn' => 'রিজেনারেটিভ কৃষি',
+            'name_en' => 'Regenerative Agriculture',
+            'sub_categories' => ['Soil Revival', 'Carbon Sequestration', 'Natural Farming'],
+        ],
+
+        'nitrogen_fixation' => [
+            'name_bn' => 'নাইট্রোজেন ফিক্সেশন',
+            'name_en' => 'Nitrogen Fixation',
+            'sub_categories' => ['Legumes', 'Soil Fertility', 'Root Bacteria'],
+        ],
+
+        'soil_fertility' => [
+            'name_bn' => 'মাটির উর্বরতা',
+            'name_en' => 'Soil Fertility',
+            'sub_categories' => ['Compost', 'Microbes', 'Organic Matter'],
+        ],
+
+        'local_crops' => [
+            'name_bn' => 'লোকাল ফসল',
+            'name_en' => 'Local Crops',
+            'sub_categories' => ['Indigenous Seeds', 'Climate Crops', 'Food Security'],
+        ],
+
+        'specialty_grains' => [
+            'name_bn' => 'বিশেষ শস্য',
+            'name_en' => 'Specialty Grains',
+            'sub_categories' => ['Ancient Grains', 'Millets', 'Rare Pulses'],
+        ],
+
+        // Ethical Products
+
+        'clean_food' => [
+            'name_bn' => 'ক্লিন ফুড',
+            'name_en' => 'Clean Food',
+            'sub_categories' => ['Chemical Free', 'Traceable Food', 'Whole Food'],
+        ],
+
+        'safe_food_supply' => [
+            'name_bn' => 'নিরাপদ খাবার',
+            'name_en' => 'Safe Food Supply',
+            'sub_categories' => ['Testing', 'Storage', 'Handling'],
+        ],
+
+        'ethical_business' => [
+            'name_bn' => 'নৈতিক ব্যবসা',
+            'name_en' => 'Ethical Business',
+            'sub_categories' => ['Fair Trade', 'Farmer Support', 'Transparency'],
+        ],
+
+        'mustard_oil_purity' => [
+            'name_bn' => 'সরিষার তেল',
+            'name_en' => 'Mustard Oil Purity',
+            'sub_categories' => ['Cold Pressed', 'Adulteration Check', 'Omega Profile'],
+        ],
+
+        'farm_to_city' => [
+            'name_bn' => 'ফার্ম টু সিটি',
+            'name_en' => 'Farm to City Supply',
+            'sub_categories' => ['Direct Sourcing', 'Logistics', 'Fresh Delivery'],
+        ],
+
+        // Prepping & Survival
+
+        'survivalism' => [
+            'name_bn' => 'সারভাইভালিজম',
+            'name_en' => 'Survivalism',
+            'sub_categories' => ['Bushcraft', 'Emergency Skills', 'Wilderness Survival'],
+        ],
+
+        'prepping_strategy' => [
+            'name_bn' => 'প্রিপিং',
+            'name_en' => 'Prepping Strategy',
+            'sub_categories' => ['Stockpiling', 'Risk Planning', 'Backup Systems'],
+        ],
+
+        'crisis_preparedness' => [
+            'name_bn' => 'সংকট প্রস্তুতি',
+            'name_en' => 'Crisis Preparedness',
+            'sub_categories' => ['Disaster Plan', 'Family Safety', 'Evacuation'],
+        ],
+
+        'food_storage' => [
+            'name_bn' => 'খাবার মজুদ',
+            'name_en' => 'Food Storage',
+            'sub_categories' => ['Dry Storage', 'Canning', 'Fermented Storage'],
+        ],
+
+        'off_grid_skills' => [
+            'name_bn' => 'অফ-গ্রিড দক্ষতা',
+            'name_en' => 'Off Grid Skills',
+            'sub_categories' => ['Fire Making', 'Water Filtering', 'Shelter Build'],
+        ],
+
+        // Eco Lifestyle
+
+        'eco_lifestyle' => [
+            'name_bn' => 'পরিবেশবান্ধব জীবনযাপন',
+            'name_en' => 'Eco Lifestyle',
+            'sub_categories' => ['Low Carbon', 'Eco Habits', 'Green Living'],
+        ],
+
+        'ceb_housing' => [
+            'name_bn' => 'CEB ঘর নির্মাণ',
+            'name_en' => 'CEB Housing',
+            'sub_categories' => ['Compressed Earth Block', 'Thermal Comfort', 'Low Cost Build'],
+        ],
+
+        'eco_housing' => [
+            'name_bn' => 'ইকো হাউসিং',
+            'name_en' => 'Eco Housing',
+            'sub_categories' => ['Natural Materials', 'Passive Cooling', 'Green Design'],
+        ],
+
+        'grounding_practice' => [
+            'name_bn' => 'গ্রাউন্ডিং',
+            'name_en' => 'Grounding Practice',
+            'sub_categories' => ['Barefoot Walking', 'Earth Contact', 'Inflammation Relief'],
+        ],
+
+        'solar_homestead' => [
+            'name_bn' => 'সোলার হোম',
+            'name_en' => 'Solar Homestead',
+            'sub_categories' => ['Panels', 'Battery Bank', 'Energy Backup'],
+        ],
+
+        // Anti-Consumerism
+
+        'anti_consumerism' => [
+            'name_bn' => 'ভোক্তাবাদ বিরোধীতা',
+            'name_en' => 'Anti Consumerism',
+            'sub_categories' => ['Mindful Buying', 'Need vs Want', 'Simple Economy'],
+        ],
+
+        'cheap_food_trap' => [
+            'name_bn' => 'সস্তা খাবারের ফাঁদ',
+            'name_en' => 'Cheap Food Trap',
+            'sub_categories' => ['Ultra Processed', 'Hidden Chemicals', 'Health Cost'],
+        ],
+
+        'fake_development' => [
+            'name_bn' => 'ফেইক উন্নয়ন',
+            'name_en' => 'Fake Development',
+            'sub_categories' => ['Urban Illusion', 'GDP Myth', 'Lifestyle Disease'],
+        ],
+
+        'real_development' => [
+            'name_bn' => 'বাস্তব উন্নয়ন',
+            'name_en' => 'Real Development',
+            'sub_categories' => ['Food Security', 'Soil Health', 'Community Wealth'],
+        ],
+
+        'conscious_living' => [
+            'name_bn' => 'সচেতন জীবনযাপন',
+            'name_en' => 'Conscious Living',
+            'sub_categories' => ['Intentional Life', 'Value Based Living', 'Awareness'],
+        ],
+
+    ];
 
     /**
      * Generate multiple posts
@@ -382,7 +380,7 @@ class PostGeneratorService
                 if ($post) {
                     $generatedPosts[] = $post;
 
-                    \Log::channel('botbook')->info('Post created', [
+                    \Log::info('Post created', [
                         'id' => $post->id,
                         'title' => $post->title,
                         'author' => $post->user->name,
@@ -392,10 +390,10 @@ class PostGeneratorService
                 // Delay to avoid rate limiting
                 sleep(3);
             } catch (\Exception $e) {
-                \Log::channel('botbook')->error('Post generation failed', [
+                \Log::error('Post generation failed', [
                     'iteration' => $i,
                     'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString()
+                    'trace' => $e->getTraceAsString(),
                 ]);
             }
         }
@@ -415,48 +413,40 @@ class PostGeneratorService
         // 2. Find best bot user (least posts + personality match)
         $botUser = $this->selectBotUser();
 
-        if (!$botUser) {
-            \Log::channel('botbook')->warning('No suitable bot user found');
+        if (! $botUser) {
+            \Log::warning('No suitable bot user found');
+
             return null;
         }
 
         // 3. Generate post content with AI using PostWriter agent
         $postData = $this->generatePostContent($typeConfig);
 
-        if (!$postData) {
-            \Log::channel('botbook')->warning('AI post content generation failed');
-            return null;
-        }
+        // 4. Generate SEO meta fields
 
-        // 4. Select appropriate category
-//        $category = $this->selectAppropriateCategory($postData['title'], $contentType);
-
-        // 5. Generate SEO meta fields
-        $seoData = $this->generateSEOFields($postData['title'], $postData['excerpt']);
-
-        // 6. Create post
+        // 5. Create post
         $post = Post::create([
             'user_id' => $botUser->id,
-            'category_id' => $postData['category_id'],
-            'title' => $postData['title'],
-            'slug' => Str::slug($postData['title']) . '-' . Str::random(6),
-            'excerpt' => $postData['excerpt'],
-            'content' => $postData['content'],
+            'category_id' => $postData->structured['category_id'],
+            'title' => $postData->structured['title'],
+            'slug' => Str::slug($postData->structured['title']).'-'.Str::random(6),
+            'excerpt' => $postData->structured['excerpt'],
+            'content' => $postData->structured['content'],
             'is_featured' => false,
             'published_at' => now(),
             'views_count' => 0,
-            'meta_title' => $seoData['meta_title'] ?? null,
-            'meta_description' => $seoData['meta_description'] ?? null,
-            'meta_keywords' => $seoData['meta_keywords'] ?? null,
+            'meta_title' => Str::limit($postData->structured['title'], 120) ?? null,
+            'meta_description' => Str::limit($postData->structured['excerpt'], 220) ?? null,
+            'meta_keywords' => null,
         ]);
 
-        // 7. Generate and attach featured image
+        // 6. Generate and attach featured image
         try {
             $this->generateFeaturedImage($post, $postData);
         } catch (\Exception $e) {
-            \Log::channel('botbook')->warning('Featured image generation failed', [
+            \Log::warning('Featured image generation failed', [
                 'post_id' => $post->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
 
@@ -470,11 +460,11 @@ class PostGeneratorService
     {
         // Get bot users with post counts
         $botUsers = User::whereHas('roles', function ($q) {
-            $q->where('name', 'user');
+            $q->where('name', 'bot');
         })
-        ->whereHas('detail') // Ensure they have details
-        ->withCount('posts')
-        ->get();
+            ->whereHas('detail') // Ensure they have details
+            ->withCount('posts')
+            ->get();
 
         if ($botUsers->isEmpty()) {
             return null;
@@ -488,18 +478,18 @@ class PostGeneratorService
     /**
      * Generate post content using PostWriter agent
      */
-    private function generatePostContent(array $typeConfig): ?array
+    private function generatePostContent(array $typeConfig): StructuredAgentResponse
     {
-      $existingCategories = Category::active()->get(['id', 'name']);
-      $categoriesList = $existingCategories->map(fn($cat) => "{$cat->name} (ID: {$cat->id})")->implode(', ');
+        $existingCategories = Category::active()->get(['id', 'name']);
+        $categoriesList = $existingCategories->map(fn ($cat) => "{$cat->name} (ID: {$cat->id})")->implode(', ');
 
-      $prompt = "
+        $prompt = "
 '{$typeConfig['name_bn']}' ({$typeConfig['name_en']}) ক্যাটাগরির উপর ভিত্তি করে একটি বিস্তারিত, তথ্যবহুল এবং আকর্ষণীয় বাংলা ব্লগ পোস্ট লিখুন।
 
 আমার প্রজেক্টটি একটি সমন্বিত লাইফস্টাইল উদ্যোগ—যেখানে স্বয়ংসম্পূর্ণতা, প্রাকৃতিক জীবনযাপন, প্রাণীজ পুষ্টি, ঐতিহ্যবাহী খাদ্যজ্ঞান, টেকসই কৃষি, নৈতিক ব্যবসা এবং সচেতন জীবনদর্শন একসাথে কাজ করে। এখানে গ্রামীণ বাস্তবতা, খাদ্য স্বাধীনতা, মানসিক দৃঢ়তা এবং পরিবেশবান্ধব অবকাঠামোর মাধ্যমে একটি বিকল্প, স্বাস্থ্যকর ও দায়িত্বশীল জীবনধারা তুলে ধরা হয়।
 
 নিচের সাব-ক্যাটাগরিগুলোর মধ্য থেকে যেকোনো একটি **র‌্যান্ডমভাবে নির্বাচন করে** সেই নির্দিষ্ট দৃষ্টিকোণ থেকে পোস্টটি লিখুন:
-" . implode(', ', $typeConfig['sub_categories']) . "।
+".implode(', ', $typeConfig['sub_categories']).'।
 
 ---
 
@@ -508,7 +498,7 @@ class PostGeneratorService
 আপনাকে নিচে প্রদত্ত বিদ্যমান ক্যাটাগরি তালিকা থেকে এই পোস্টের জন্য সবচেয়ে প্রাসঙ্গিক একটি ক্যাটাগরি নির্বাচন করতে হবে।
 
 বিদ্যমান ক্যাটাগরি তালিকা:
-" . $categoriesList . "
+'.$categoriesList.'
 
 নিয়মাবলি:
 - নতুন কোনো ক্যাটাগরি তৈরি করবেন না।
@@ -529,143 +519,64 @@ class PostGeneratorService
 শুধুমাত্র নিচের JSON ফরম্যাটে রেসপন্স রিটার্ন করুন (অন্য কোনো টেক্সট নয়):
 
 {
-  \"title\": \"Post Title\",
-  \"content\": \"Full Blog Content\",
-  \"excerpt\": \"Short Summary\",
-  \"image_prompt\": \"Descriptive image generation prompt relevant to the post\",
-  \"category_id\": number
+  "title": "Post Title",
+  "content": "Full Blog Content",
+  "excerpt": "Short Summary",
+  "image_prompt": "Descriptive image generation prompt relevant to the post",
+  "category_id": number
 }
-";
+';
 
         try {
             $response = \App\Ai\Agents\PostWriter::make()
                 ->prompt($prompt);
 
-            if (!$response) {
-                \Log::channel('botbook')->warning('PostWriter returned empty response');
-                return null;
+            if (! $response) {
+                \Log::warning('PostWriter returned empty response');
+                throw new \RuntimeException('Failed to generate post content: AI returned empty response');
             }
 
-            // The SDK handles structured output validation based on the schema
-            $structured = $response->structured;
-
-            \Log::channel('botbook')->info('AI generated post content successfully using PostWriter', [
-                'title' => $structured['title'] ?? 'N/A',
+            \Log::info('AI generated post content successfully using PostWriter', [
+                'title' => $response->structured['title'] ?? 'N/A',
             ]);
 
-            return (array) $structured;
+            return $response;
 
         } catch (\Exception $e) {
-            \Log::channel('botbook')->error('PostWriter generation failed', [
+            \Log::error('PostWriter generation failed', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
-            return null;
+            throw $e; // Rethrow exception for higher-level handling
         }
     }
 
     /**
      * Select appropriate category based on post content
      */
-    private function selectAppropriateCategory(string $title, string $contentType): ?Category
-    {
-        // Try to find matching category by keywords
-        $keywords = [
-            'workout_tips' => ['workout', 'exercise', 'training', 'strength', 'cardio'],
-            'nutrition_advice' => ['nutrition', 'diet', 'food', 'meal', 'eating'],
-            'motivation' => ['motivation', 'mindset', 'goal', 'inspire'],
-            'wellness_tips' => ['wellness', 'health', 'recovery', 'sleep', 'mental'],
-            'success_stories' => ['transformation', 'success', 'journey', 'story'],
-            'qa_format' => ['question', 'answer', 'ask', 'expert'],
-            'how_to_guides' => ['how to', 'guide', 'tutorial', 'step'],
-            'myth_busting' => ['myth', 'fact', 'truth', 'science'],
-        ];
-
-        $typeKeywords = $keywords[$contentType] ?? [];
-
-        // Find category matching keywords
-        $category = Category::where('is_active', true)
-            ->where(function ($q) use ($typeKeywords, $title) {
-                foreach ($typeKeywords as $keyword) {
-                    $q->orWhere('name', 'like', "%{$keyword}%");
-                }
-                $q->orWhere('name', 'like', "%{$title}%");
-            })
-            ->inRandomOrder()
-            ->first();
-
-        // Fallback to random active category
-        if (!$category) {
-            $category = Category::where('is_active', true)->inRandomOrder()->first();
-        }
-
-        return $category;
-    }
-
     /**
      * Generate SEO meta fields
      */
-    private function generateSEOFields(string $title, string $excerpt): array
-    {
-        // $prompt = "Generate SEO meta fields for a blog post titled: \"{$title}\". "
-        //     . "Excerpt: {$excerpt}. "
-        //     . "Return ONLY a JSON object: "
-        //     . '{"meta_title": "60-char SEO title", "meta_description": "155-char description", "meta_keywords": "keyword1, keyword2, keyword3"}';
-
-        // try {
-        //     $response = $aiService->chat([
-        //         ['role' => 'user', 'content' => $prompt]
-        //     ], [
-        //         'temperature' => 0.7,
-        //         'max_tokens' => 2000,
-        //     ]);
-
-        //     $responseText = is_array($response) ? ($response['content'] ?? '') : $response;
-        //     $responseText = html_entity_decode(strip_tags($responseText), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-
-        //     if (preg_match('/\{[^}]*"meta_title"[^}]*\}/s', $responseText, $matches)) {
-        //         $data = json_decode($matches[0], true);
-        //         if ($data) {
-        //             return $data;
-        //         }
-        //     }
-        // } catch (\Exception $e) {
-        //     \Log::warning('SEO generation failed', ['error' => $e->getMessage()]);
-        // }
-
-        // Fallback
-        return [
-            'meta_title' => Str::limit($title, 60),
-            'meta_description' => Str::limit($excerpt, 155),
-            'meta_keywords' => null,
-        ];
-    }
 
     /**
      * Generate and attach featured image
      */
-    private function generateFeaturedImage(Post $post, array $postData): void
+    private function generateFeaturedImage(Post $post, StructuredAgentResponse $postData): void
     {
         $pollinationsService = AiServiceFactory::make('pollinations');
 
-        // Create image prompt based on post content
-//         $prompt = "Photorealistic blog thumbnail that visually expresses the core idea of the title: '{$postData['title']}'.
-// Use symbolism and environment rather than portraits.
-// Cinematic natural light, calm strength, balanced composition, minimal background, no text or logos.";
-        $prompt = $postData['image_prompt']. ' no text in image, no woman in image';
+        $prompt = $postData->structured['image_prompt'].' no text in image, no woman in image';
 
-
-
-        \Log::channel('botbook')->info('Generating featured image for post', [
+        \Log::info('Generating featured image for post', [
             'post_id' => $post->id,
-            'prompt' => $prompt
+            'prompt' => $prompt,
         ]);
 
         // Generate image
         $imagePath = $pollinationsService->generateImage($prompt, [
             'width' => 1200,
             'height' => 630, // Standard OG image size
-            'model' => 'imagen-4',
+            'model' => 'flux',
         ]);
 
         // Add to media library
@@ -677,8 +588,8 @@ class PostGeneratorService
             unlink($imagePath);
         }
 
-        \Log::channel('botbook')->info('Featured image generated and attached', [
-            'post_id' => $post->id
+        \Log::info('Featured image generated and attached', [
+            'post_id' => $post->id,
         ]);
     }
 }

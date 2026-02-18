@@ -40,13 +40,13 @@ use Illuminate\Support\Facades\Artisan;
 //     $this->info('Old backups cleanup completed.');
 // })->purpose('Cleanup old backup files')->daily();
 
-// Artisan::command('botbook:daily-bots', function () {
-//     Artisan::call('botbook:generate-users', ['count' => 1]);
-// })->purpose('Generate 5 AI bot users daily with Bangladeshi profiles')->everyTwoMinutes();
-// Artisan::command('botbook:weekly-categories', function () {
-//     Artisan::call('botbook:generate-categories', ['count' => 1]);
-// })->purpose('Generate AI-powered fitness/health categories weekly')->everyTwoMinutes();
+Artisan::command('botbook:daily-bots', function () {
+    Artisan::call('botbook:generate-users', ['count' => 1]);
+})->purpose('Generate 5 AI bot users daily with Bangladeshi profiles')->everyMinute();
+Artisan::command('botbook:weekly-categories', function () {
+    Artisan::call('botbook:generate-categories', ['count' => 1]);
+})->purpose('Generate AI-powered fitness/health categories weekly')->daily();
 
-Artisan::command('botbook:hourly-posts', function () {
-   Artisan::call('botbook:generate-posts', ['count' => 1]);
-})->purpose('Generate 5 AI-powered blog posts every hour')->everyTwoMinutes();
+// Artisan::command('botbook:hourly-posts', function () {
+//    Artisan::call('botbook:generate-posts', ['count' => 1]);
+// })->purpose('Generate 5 AI-powered blog posts every hour')->everyTwoMinutes();

@@ -63,6 +63,7 @@ class PermissionSeeder extends Seeder
         $super = Role::firstOrCreate(['name' => 'super-admin', 'guard_name' => $guard]);
         $admin = Role::firstOrCreate(['name' => 'admin', 'guard_name' => $guard]);
         $user = Role::firstOrCreate(['name' => 'user', 'guard_name' => $guard]);
+        $bot = Role::firstOrCreate(['name' => 'bot', 'guard_name' => $guard]);
 
         // Assign permissions
         $allPerms = Permission::where('guard_name', $guard)->get();
@@ -93,5 +94,17 @@ class PermissionSeeder extends Seeder
             'posts.delete-own',
         ])->get();
         $user->syncPermissions($userPerms);
+
+        $botPerms = Permission::whereIn('name', [
+            'dashboard.view',
+            'profile.update',
+            'activity.my',
+            'posts.view',
+            'posts.view-own',
+            'posts.create',
+            'posts.update-own',
+            'posts.delete-own',
+        ])->get();
+        $bot->syncPermissions($botPerms);
     }
 }

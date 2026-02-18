@@ -3,11 +3,10 @@
 use App\Models\Post;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
-use Livewire\Attributes\Title;
 use Livewire\Component;
 
 new
-#[Layout('layouts.auth')]
+#[Layout('layouts.web')]
 class extends Component
 {
     public string $slug;

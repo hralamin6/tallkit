@@ -1,40 +1,4 @@
-<div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-slate-900 dark:to-indigo-950">
-  
-  {{-- Navigation --}}
-  <nav class="sticky top-0 z-50 backdrop-blur-lg bg-white/80 dark:bg-gray-900/80 border-b border-gray-200 dark:border-gray-800">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex justify-between items-center h-16">
-        {{-- Logo --}}
-        <a wire:navigate href="{{ route('web.home') }}" class="flex items-center space-x-3 group">
-          <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition">
-            <span class="text-white font-bold text-xl">💪</span>
-          </div>
-          <span class="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-            FitHub
-          </span>
-        </a>
-
-        {{-- Auth Links --}}
-        <div class="flex items-center space-x-4">
-          @auth
-            <a wire:navigate href="{{ route('app.dashboard') }}" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition">
-              Dashboard
-            </a>
-          @else
-            <a wire:navigate href="{{ route('login') }}" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition">
-              Log in
-            </a>
-            @if (Route::has('register'))
-              <a wire:navigate href="{{ route('register') }}" class="px-6 py-2 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg hover:from-indigo-700 hover:to-purple-700 transition shadow-lg shadow-indigo-500/50">
-                Get Started
-              </a>
-            @endif
-          @endauth
-        </div>
-      </div>
-    </div>
-  </nav>
-
+<div>
   {{-- Header --}}
   <section class="relative overflow-hidden py-12 lg:py-16 bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-pink-500/10">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -109,11 +73,11 @@
             
             @foreach($this->categories->take(6) as $cat)
               <button 
-                wire:click="$set('category', '{{ $cat->slug }}')"
+                wire:click="$set('category', '{{ $cat->id }}')"
                 @class([
                   'px-4 py-2 rounded-lg text-sm font-medium transition',
-                  'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/50' => $category === $cat->slug,
-                  'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-indigo-500' => $category !== $cat->slug,
+                  'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/50' => $category === $cat->id,
+                  'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-indigo-500' => $category !== $cat->id,
                 ])
               >
                 {{ $cat->name }} ({{ $cat->posts_count }})
@@ -149,11 +113,11 @@
           <div class="flex flex-wrap gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
             @foreach($this->categories->skip(6) as $cat)
               <button 
-                wire:click="$set('category', '{{ $cat->slug }}')"
+                wire:click="$set('category', '{{ $cat->id }}')"
                 @class([
                   'px-4 py-2 rounded-lg text-sm font-medium transition',
-                  'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/50' => $category === $cat->slug,
-                  'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-indigo-500' => $category !== $cat->slug,
+                  'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/50' => $category === $cat->id,
+                  'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-indigo-500' => $category !== $cat->id,
                 ])
               >
                 {{ $cat->name }} ({{ $cat->posts_count }})
@@ -178,7 +142,7 @@
             @endif
             @if($category)
               @php
-                $selectedCat = $this->categories->firstWhere('slug', $category);
+                $selectedCat = $this->categories->firstWhere('id', $category);
               @endphp
               @if($selectedCat)
                 <span class="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-sm">
@@ -206,9 +170,9 @@
         @forelse($this->posts as $post)
           <article 
             wire:key="post-{{ $post->id }}"
-            class="group bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 hover:border-indigo-500 dark:hover:border-indigo-500 transition-all duration-300 hover:shadow-2xl hover:shadow-indigo-500/20 hover:-translate-y-2 cursor-pointer"
-            onclick="window.location.href='{{ route('web.post', $post->slug) }}'"
+            class="group bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 hover:border-indigo-500 dark:hover:border-indigo-500 transition-all duration-300 hover:shadow-2xl hover:shadow-indigo-500/20 hover:-translate-y-2"
           >
+            <a wire:navigate href="{{ route('web.post', $post->slug) }}" class="block">
             {{-- Post Image --}}
             <div class="relative h-48 bg-gradient-to-br from-indigo-500 to-purple-600 overflow-hidden">
               @if($post->getFirstMediaUrl('featured_image'))
@@ -271,6 +235,7 @@
                 </div>
               </div>
             </div>
+            </a>
           </article>
         @empty
           <div class="col-span-full text-center py-16">
@@ -308,57 +273,4 @@
     </div>
   </section>
 
-  {{-- Footer --}}
-  <footer class="bg-gray-900 text-gray-400 py-12 mt-16">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="grid md:grid-cols-4 gap-8 mb-8">
-        <div>
-          <div class="flex items-center space-x-2 mb-4">
-            <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
-              <span class="text-white font-bold">💪</span>
-            </div>
-            <span class="text-xl font-bold text-white">FitHub</span>
-          </div>
-          <p class="text-sm">
-            Your ultimate fitness and health community platform.
-          </p>
-        </div>
-        
-        <div>
-          <h3 class="text-white font-semibold mb-4">Platform</h3>
-          <ul class="space-y-2 text-sm">
-            <li><a wire:navigate href="{{ route('web.home') }}" class="hover:text-white transition">Home</a></li>
-            <li><a wire:navigate href="{{ route('web.posts') }}" class="hover:text-white transition">Articles</a></li>
-            <li><a href="#" class="hover:text-white transition">About Us</a></li>
-          </ul>
-        </div>
-        
-        <div>
-          <h3 class="text-white font-semibold mb-4">Categories</h3>
-          <ul class="space-y-2 text-sm">
-            @foreach($this->categories->take(4) as $cat)
-              <li>
-                <button wire:click="$set('category', '{{ $cat->slug }}')" class="hover:text-white transition">
-                  {{ $cat->name }}
-                </button>
-              </li>
-            @endforeach
-          </ul>
-        </div>
-        
-        <div>
-          <h3 class="text-white font-semibold mb-4">Legal</h3>
-          <ul class="space-y-2 text-sm">
-            <li><a href="#" class="hover:text-white transition">Privacy Policy</a></li>
-            <li><a href="#" class="hover:text-white transition">Terms of Service</a></li>
-            <li><a href="#" class="hover:text-white transition">Cookie Policy</a></li>
-          </ul>
-        </div>
-      </div>
-      
-      <div class="border-t border-gray-800 pt-8 text-center text-sm">
-        <p>&copy; {{ date('Y') }} FitHub. All rights reserved. Built with Laravel & Livewire.</p>
-      </div>
-    </div>
-  </footer>
 </div>

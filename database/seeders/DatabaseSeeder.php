@@ -16,35 +16,34 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // Seed roles & permissions first
-      $this->call([DivisionSeeder::class,]);
-      $this->call([DistrictSeeder::class,]);
-      $this->call([UpazilaSeeder::class,]);
-      $this->call([UnionSeeder::class,]);
+        $this->call([DivisionSeeder::class]);
+        $this->call([DistrictSeeder::class]);
+        $this->call([UpazilaSeeder::class]);
+        $this->call([UnionSeeder::class]);
+        $this->call([PostSeeder::class]);
 
-
-      $this->call([PermissionSeeder::class,]);
-
+        $this->call([PermissionSeeder::class]);
 
         // Seed demo users
         $admin = User::updateOrCreate([
             'email' => 'admin@mail.com'], [
-            'name' => 'admin',
-            'email_verified_at' => now(),
-            'password' => bcrypt('000000'),
-        ]);
+                'name' => 'admin',
+                'email_verified_at' => now(),
+                'password' => bcrypt('000000'),
+            ]);
 
         $user = User::updateOrCreate([
             'email' => 'user@mail.com'], [
-            'name' => 'user',
-            'email_verified_at' => now(),
-            'password' => bcrypt('000000'),
-        ]);
+                'name' => 'user',
+                'email_verified_at' => now(),
+                'password' => bcrypt('000000'),
+            ]);
 
         // Assign roles
-        if ($admin && !$admin->hasRole('super-admin')) {
+        if ($admin && ! $admin->hasRole('super-admin')) {
             $admin->assignRole('super-admin');
         }
-        if ($user && !$user->hasRole('user')) {
+        if ($user && ! $user->hasRole('user')) {
             $user->assignRole('user');
         }
     }

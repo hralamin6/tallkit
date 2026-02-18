@@ -9,15 +9,14 @@ use Livewire\Component;
 use Livewire\WithPagination;
 
 new
-#[Layout('layouts.auth')]
+#[Layout('layouts.web')]
 class extends Component
 {
     use WithPagination;
 
     #[Url(as: 's')]
     public string $search = '';
-
-    #[Url(as: 'c')]
+    #[Url(as: 'category')]
     public ?string $category = null;
 
     #[Url(as: 'sort')]
@@ -47,7 +46,7 @@ class extends Component
         // Category filter
         if ($this->category) {
             $query->whereHas('category', function ($q) {
-                $q->where('slug', $this->category);
+                $q->where('id', $this->category);
             });
         }
 
