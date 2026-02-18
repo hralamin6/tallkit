@@ -163,31 +163,53 @@
 
       {{-- Top Contributors --}}
       @if($this->topContributors->isNotEmpty())
-        <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
-          <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
-            <span class="w-10 h-10 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-lg flex items-center justify-center mr-3">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 border border-gray-200 dark:border-gray-700 shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-8 flex items-center">
+            <span class="w-10 h-10 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-lg flex items-center justify-center mr-3 shadow-lg shadow-yellow-500/30">
               <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
               </svg>
             </span>
             Top Contributors
+            <span class="ml-auto text-sm font-normal text-gray-500 dark:text-gray-400">Most Active Members</span>
           </h3>
-          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-6">
             @foreach($this->topContributors as $contributor)
-              <div class="text-center group">
+              <a wire:navigate href="{{ route('web.user', $contributor->id) }}" class="text-center group">
                 <div class="relative inline-block mb-3">
-                  <img
-                    src="{{ $contributor->avatar_url }}"
-                    alt="{{ $contributor->name }}"
-                    class="w-16 h-16 rounded-full object-cover border-4 border-gray-100 dark:border-gray-700 group-hover:border-indigo-500 dark:group-hover:border-indigo-400 transition"
-                  >
-                  <div class="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white text-xs font-bold border-2 border-white dark:border-gray-800">
-                    {{ $loop->iteration }}
+                  {{-- Avatar with Medal Background --}}
+                  <div class="relative">
+                    <div class="absolute inset-0 bg-gradient-to-br from-yellow-400/20 to-orange-500/20 rounded-full scale-110 group-hover:scale-125 transition-transform duration-300"></div>
+                    <img
+                      src="{{ $contributor->avatar_url }}"
+                      alt="{{ $contributor->name }}"
+                      class="relative w-20 h-20 rounded-full object-cover border-4 border-gray-100 dark:border-gray-700 group-hover:border-yellow-400 dark:group-hover:border-yellow-500 transition-all duration-300 shadow-lg group-hover:shadow-xl group-hover:shadow-yellow-500/30"
+                    >
+                  </div>
+                  
+                  {{-- Rank Badge --}}
+                  <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2.5 py-1 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white text-xs font-bold border-2 border-white dark:border-gray-800 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    @if($loop->iteration === 1)
+                      🥇
+                    @elseif($loop->iteration === 2)
+                      🥈
+                    @elseif($loop->iteration === 3)
+                      🥉
+                    @else
+                      #{{ $loop->iteration }}
+                    @endif
                   </div>
                 </div>
-                <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ $contributor->name }}</p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">{{ $contributor->posts_count }} posts</p>
-              </div>
+                <p class="text-sm font-semibold text-gray-900 dark:text-white truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                  {{ $contributor->name }}
+                </p>
+                <div class="flex items-center justify-center gap-1 mt-1">
+                  <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                  </svg>
+                  <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $contributor->posts_count }}</p>
+                </div>
+              </a>
             @endforeach
           </div>
         </div>
@@ -208,28 +230,51 @@
       </div>
 
       {{-- Search & Filters --}}
-      <div class="mb-8 space-y-4">
-        {{-- Search Bar --}}
-        <div class="relative max-w-2xl mx-auto">
-          <input
-            type="text"
-            wire:model.live.debounce.500ms="search"
-            placeholder="Search members by name or email..."
-            class="w-full px-6 py-4 pl-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition shadow-lg"
-          >
-          <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-          </svg>
-          @if($search)
-            <button
-              wire:click="$set('search', '')"
-              class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+      <div class="mb-8 space-y-6">
+        {{-- Enhanced Search Bar --}}
+        <div class="relative max-w-3xl mx-auto group">
+          <div class="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-2xl opacity-0 group-hover:opacity-10 blur transition-opacity duration-300"></div>
+          <div class="relative">
+            <input
+              type="text"
+              wire:model.live.debounce.500ms="search"
+              placeholder="Search members by name or email..."
+              class="w-full px-6 py-5 pl-14 pr-14 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all duration-300 shadow-lg hover:shadow-xl text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-lg"
             >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            {{-- Search Icon --}}
+            <div class="absolute left-5 top-1/2 -translate-y-1/2">
+              <svg class="w-6 h-6 text-gray-400 group-hover:text-indigo-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
               </svg>
-            </button>
-          @endif
+            </div>
+            
+            {{-- Clear Button or Loading --}}
+            <div class="absolute right-5 top-1/2 -translate-y-1/2">
+              @if($search)
+                <button
+                  wire:click="$set('search', '')"
+                  class="text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors p-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
+                  title="Clear search"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                  </svg>
+                </button>
+              @else
+                <div class="text-xs text-gray-400 font-medium px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">
+                  ⌘K
+                </div>
+              @endif
+            </div>
+            
+            {{-- Loading Indicator --}}
+            <div wire:loading wire:target="search" class="absolute right-16 top-1/2 -translate-y-1/2">
+              <svg class="animate-spin h-5 w-5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            </div>
+          </div>
         </div>
 
         {{-- Filter Bar --}}
@@ -519,5 +564,22 @@
     </div>
   </section>
 
+  {{-- Add Custom Animations --}}
+  <style>
+    @keyframes fade-in-up {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .animate-fade-in-up {
+      animation: fade-in-up 0.6s ease-out forwards;
+    }
+  </style>
 
 </div>

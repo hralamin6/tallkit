@@ -37,7 +37,7 @@ class BotUserGenerator implements Agent, Conversational, HasStructuredOutput, Ha
             ."- লিঙ্গ অনুযায়ী উপযুক্ত নাম\n"
             ."- gender অবশ্যই 'male' হতে হবে\n\n"
             ."শুধুমাত্র এই ফরম্যাটে একটি JSON অবজেক্ট রিটার্ন করুন:\n"
-            .'{"name": "সম্পূর্ণ বাংলা নাম", "gender": "male", "address": "গ্রাম/মহল্লা নাম", "bio": "পেশাদার বায়ো", "occupation": "পেশা"}';
+            .'{"name": "সম্পূর্ণ বাংলা নাম", "gender": "male", "address": "গ্রাম/মহল্লা নাম", "bio": "পেশাদার বায়ো only 5 sentenceP", "occupation": "পেশা"}';
     }
 
     /**

@@ -34,7 +34,8 @@ class extends Component
     #[Computed]
     public function users()
     {
-        $query = User::with(['roles', 'media']);
+        $query = User::with(['roles', 'media', 'posts'])
+            ->withCount('posts');
 
         // Search
         if ($this->search) {
