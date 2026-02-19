@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\Post;
 use App\Models\User;
 use App\Services\AI\AiServiceFactory;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Laravel\Ai\Responses\StructuredAgentResponse;
 
@@ -379,7 +380,12 @@ class PostGeneratorService
 
                 if ($post) {
                     $generatedPosts[] = $post;
-
+ Http::post('https://n8n.aminhub.tech/webhook/laravel-post', [
+        'title' => $post->title,
+        'url' => route('web.post', $post->slug),
+        'excerpt' => $post->excerpt,
+        'image' => $post->getFirstMediaUrl('featured_image'),
+    ]);
                     \Log::info('Post created', [
                         'id' => $post->id,
                         'title' => $post->title,

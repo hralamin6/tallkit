@@ -100,7 +100,7 @@ return [
     ],
     'custom' => [
         'api_key' => env('CUSTOM_API_KEY', ''),
-        'base_url' => env('CUSTOM_BASE_URL', 'http://139.59.25.41:20128/v1'),
+        'base_url' => env('CUSTOM_BASE_URL', 'https://9router.com/v1'),
     ],
 
 
