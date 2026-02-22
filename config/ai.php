@@ -95,7 +95,7 @@ return [
         'custom' => [
             'driver' => 'groq',
             'key' => env('CUSTOM_API_KEY'),
-            'url' => env('CUSTOM_BASE_URL', 'http://139.59.25.41:20128/v1'),
+            'url' => env('CUSTOM_BASE_URL', 'https://9router.com/v1'),
         ],
 
     ],

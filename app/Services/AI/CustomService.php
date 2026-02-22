@@ -31,8 +31,8 @@ class CustomService implements AiServiceInterface
                 'Authorization' => 'Bearer '.$this->apiKey,
                 'Content-Type' => 'application/json',
             ])
-                ->timeout(120)
-                ->connectTimeout(30)
+                ->timeout(300)
+                ->connectTimeout(300)
                 ->post($this->baseUrl.'/chat/completions', [
                     'model' => $model,
                     'messages' => $messages,

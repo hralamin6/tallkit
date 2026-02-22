@@ -4,6 +4,7 @@ use App\Ai\Agents\PostWriter;
 use App\Services\AI\AiServiceFactory;
 use App\Services\BotBook\StructuredResponse;
 use Illuminate\Support\Facades\Route;
+use Laravel\Ai\Ai;
 use Laravel\Ai\Image;
 
 require __DIR__.'/auth.php';
@@ -23,16 +24,13 @@ Route::get('/image', function () {
 Route::get('/ai', function () {
     $response = PostWriter::make()
         ->prompt('about islam');
-    \Illuminate\Support\Facades\Log::info($response);
-
-    return (array) $response;
+    return  $response;
 
 });
-
 Route::get('/test', function () {
     $prompt = 'একটি বিস্তারিত এবং আকর্ষণীয় ফিটনেস/স্বাস্থ্য বিষয়ক ব্লগ পোস্ট লিখুন। '
                 ."শর্তাবলী:\n"
-                ."- দৈর্ঘ্য: ১০০০-৯০০০ শব্দ (সংক্ষিপ্ত কিন্তু তথ্যবহুল রাখুন)\n"
+                ."- দৈর্ঘ্য: ১০০-৯০০ শব্দ (সংক্ষিপ্ত কিন্তু তথ্যবহুল রাখুন)\n"
                 ."- যথাযথ স্থানে বুলেট পয়েন্ট এবং সংখ্যায়িত তালিকা ব্যবহার করুন\n"
                 ."- মূল পয়েন্টগুলোতে জোর দেওয়ার জন্য **বোল্ড** ব্যবহার করুন\n"
                 ."- সূক্ষ্ম গুরুত্ব বোঝাতে *ইটালিক* ব্যবহার করুন\n"
@@ -44,7 +42,7 @@ Route::get('/test', function () {
                 ."শুধুমাত্র এই ফরম্যাটে একটি JSON অবজেক্ট রিটার্ন করুন:\n"
                 .'{"title": "আকর্ষণীয় পোস্টের শিরোনাম", "excerpt": "১৫০ অক্ষরের সারসংক্ষেপ", "content": "মার্কডাউন ফরম্যাটে সম্পূর্ণ পোস্টের কন্টেন্ট", "image_prompt": "write a nice small blog post image prompt in english for this post"}';
     // Get new response
-    $response = AiServiceFactory::make('iflow')->chat([['role' => 'user', 'content' => $prompt]], ['model' => 'glm-4.6', 'max_tokens' => 19000]);
+    $response = AiServiceFactory::make('custom')->chat([['role' => 'user', 'content' => $prompt]], ['model' => 'post', 'max_tokens' => 19000]);
     $structured = new StructuredResponse($response['content']);
     if ($structured->isValid() && $structured->hasFields(['title', 'excerpt', 'content'])) {
         return $structured->toArray();
@@ -52,6 +50,7 @@ Route::get('/test', function () {
         return $structured->getError();
     }
 });
+
 
 Route::livewire('/', 'web::home')->name('web.home');
 Route::livewire('/posts', 'web::posts')->name('web.posts');

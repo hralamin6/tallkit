@@ -7,6 +7,7 @@ use Laravel\Ai\Attributes\MaxTokens;
 use Laravel\Ai\Attributes\Model;
 use Laravel\Ai\Attributes\Provider;
 use Laravel\Ai\Attributes\Temperature;
+use Laravel\Ai\Attributes\Timeout;
 use Laravel\Ai\Attributes\UseCheapestModel;
 use Laravel\Ai\Contracts\Agent;
 use Laravel\Ai\Contracts\Conversational;
@@ -18,9 +19,10 @@ use Stringable;
 #[Provider('custom')]
 #[Model('post')]
 // #[UseCheapestModel]
-#[MaxTokens(20000)]
-#[Temperature(0.7)]
-class PostWriter implements Agent, Conversational, HasStructuredOutput, HasTools
+#[MaxTokens(10000)]
+// #[Temperature(0.7)]
+#[Timeout(120)]
+class PostWriter implements Agent, Conversational, HasTools
 {
     use Promptable;
 
@@ -32,7 +34,7 @@ class PostWriter implements Agent, Conversational, HasStructuredOutput, HasTools
 
         return 'একটি বিস্তারিত এবং আকর্ষণীয় ব্লগ পোস্ট লিখুন। '
             ."শর্তাবলী:\n"
-            ."- দৈর্ঘ্য: ১০০০-২০০০ শব্দ (সংক্ষিপ্ত কিন্তু তথ্যবহুল রাখুন)\n"
+            ."- দৈর্ঘ্য: ১০-২০ শব্দ (সংক্ষিপ্ত কিন্তু তথ্যবহুল রাখুন)\n"
             ."- যথাযথ স্থানে বুলেট পয়েন্ট এবং সংখ্যায়িত তালিকা ব্যবহার করুন\n"
             ."- মূল পয়েন্টগুলোতে জোর দেওয়ার জন্য **বোল্ড** ব্যবহার করুন\n"
             ."- সূক্ষ্ম গুরুত্ব বোঝাতে *ইটালিক* ব্যবহার করুন\n"
@@ -68,14 +70,14 @@ class PostWriter implements Agent, Conversational, HasStructuredOutput, HasTools
     /**
      * Get the agent's structured output schema definition.
      */
-    public function schema(JsonSchema $schema): array
-    {
-        return [
-            'title' => $schema->string()->required(),
-            'content' => $schema->string()->required(),
-            'excerpt' => $schema->string()->required(),
-            'image_prompt' => $schema->string()->required(),
-            'category_id' => $schema->number()->required(),
-        ];
-    }
+    // public function schema(JsonSchema $schema): array
+    // {
+    //     return [
+    //         'title' => $schema->string()->required(),
+    //         'content' => $schema->string()->required(),
+    //         'excerpt' => $schema->string()->required(),
+    //         'image_prompt' => $schema->string()->required(),
+    //         'category_id' => $schema->number()->required(),
+    //     ];
+    // }
 }
