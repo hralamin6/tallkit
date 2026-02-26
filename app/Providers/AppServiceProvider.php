@@ -36,14 +36,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Blaze::optimize()->in(resource_path('views/web'), fold: true)
+        Blaze::optimize()
+        ->in(resource_path('views/web'), fold: true)
         ->in(resource_path('views/app'), fold: true)
         ->in(resource_path('views/components'), fold: true)
-        ->in(resource_path('views/layouts'), fold: true)
-        ->in(resource_path('views/partials'), fold: true)
+        // ->in(resource_path('views/layouts'), fold: true)
         ->in(resource_path('views/auth'), fold: true)
-        ->in(resource_path('views/errors'), fold: true)
-        ->in(resource_path('views/livewire'), fold: true)
         ->in(resource_path('views/vendor'), fold: true)
         ;
         Paginator::defaultView('pagination::default');
