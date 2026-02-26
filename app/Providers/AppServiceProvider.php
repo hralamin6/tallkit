@@ -19,6 +19,7 @@ use Illuminate\Contracts\Events\Dispatcher;
 use Laravel\Ai\Contracts\Gateway\Gateway;
 use App\Ai\Providers\PollinationsProvider;
 use Laravel\Ai\Gateway\Prism\PrismGateway;
+use Livewire\Blaze\Blaze;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -35,6 +36,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Blaze::optimize()->in(resource_path('views'), fold: true);
         Paginator::defaultView('pagination::default');
 
         Paginator::defaultSimpleView('pagination::simple-default');

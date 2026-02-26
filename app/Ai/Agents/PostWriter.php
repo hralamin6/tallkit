@@ -19,10 +19,10 @@ use Stringable;
 #[Provider('custom')]
 #[Model('post')]
 // #[UseCheapestModel]
-#[MaxTokens(10000)]
+// #[MaxTokens(10000)]
 // #[Temperature(0.7)]
-#[Timeout(120)]
-class PostWriter implements Agent, Conversational, HasTools
+// #[Timeout(120)]
+class PostWriter implements Agent, Conversational, HasStructuredOutput, HasTools
 {
     use Promptable;
 
@@ -70,14 +70,14 @@ class PostWriter implements Agent, Conversational, HasTools
     /**
      * Get the agent's structured output schema definition.
      */
-    // public function schema(JsonSchema $schema): array
-    // {
-    //     return [
-    //         'title' => $schema->string()->required(),
-    //         'content' => $schema->string()->required(),
-    //         'excerpt' => $schema->string()->required(),
-    //         'image_prompt' => $schema->string()->required(),
-    //         'category_id' => $schema->number()->required(),
-    //     ];
-    // }
+    public function schema(JsonSchema $schema): array
+    {
+        return [
+            'title' => $schema->string()->required(),
+            'content' => $schema->string()->required(),
+            'excerpt' => $schema->string()->required(),
+            'image_prompt' => $schema->string()->required(),
+            'category_id' => $schema->number()->required(),
+        ];
+    }
 }

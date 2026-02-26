@@ -52,6 +52,16 @@ Route::get('/test', function () {
 });
 
 
+use Illuminate\Support\Benchmark;
+use Illuminate\Support\Facades\Http;
+
+Route::get('/benchmark', function () {
+    Benchmark::dd([
+        // 'home' => fn () => Http::get(route('web.home')),
+        'posts' => fn () => Http::get(route('web.posts')),
+    ]);
+});
+
 Route::livewire('/', 'web::home')->name('web.home');
 Route::livewire('/posts', 'web::posts')->name('web.posts');
 Route::livewire('/posts/{slug}', 'web::post')->name('web.post');
