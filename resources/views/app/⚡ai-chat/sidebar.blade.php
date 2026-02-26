@@ -1,4 +1,5 @@
 {{-- Sidebar - Conversations List --}}
+@unblaze
 <div class="w-full lg:w-80 border-b lg:border-b-0 lg:border-r border-base-300 bg-base-100 flex flex-col max-h-[40vh] lg:max-h-none">
     {{-- Sidebar Header --}}
     <div class="p-3 md:p-4 border-b border-base-300">

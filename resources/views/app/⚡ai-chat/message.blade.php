@@ -1,3 +1,4 @@
+@unblaze
 <div
     wire:key="msg-{{ $message->id }}"
     class="flex {{ $message->isUser() ? 'justify-end' : 'justify-start' }}"

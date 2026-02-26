@@ -1,4 +1,5 @@
 {{-- Message Input Area --}}
+@unblaze
 <div class="p-3 md:p-4 bg-base-100 border-t border-base-300">
     {{-- Editing Mode --}}
     @if($editingMessageId)

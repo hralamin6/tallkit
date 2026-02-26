@@ -1,3 +1,4 @@
+@unblaze
 <div class="flex flex-col lg:flex-row h-[calc(100vh-4rem)] bg-base-200" x-data="aiChat()">
     @include('app.⚡ai-chat.sidebar')
     @include('app.⚡ai-chat.main-area')

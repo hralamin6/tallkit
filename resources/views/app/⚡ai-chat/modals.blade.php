@@ -1,4 +1,5 @@
 {{-- Settings Modal --}}
+@unblaze
 @if($showSettingsModal)
     <div class="fixed inset-0 z-50 overflow-y-auto">
         <div class="flex items-center justify-center min-h-screen px-4 py-8">

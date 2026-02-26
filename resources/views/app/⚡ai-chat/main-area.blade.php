@@ -1,4 +1,5 @@
 {{-- Main Chat Area --}}
+@unblaze
 <div class="flex-1 flex flex-col bg-base-200">
     @if($this->selectedConversationId)
         {{-- Chat Header --}}
